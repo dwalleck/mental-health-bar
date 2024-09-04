@@ -1,0 +1,88 @@
+<Window x:Class="PHQ9Tracker.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        Title="PHQ-9 Tracker" Height="700" Width="1000"
+        x:Name="MainWindowControl">
+    <Window.Resources>
+        <Style x:Key="ButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#4CAF50"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="15,5"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#45a049"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name="MainGrid" Margin="20">
+        <Grid.Resources>
+            <Style x:Key="DarkModeText" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="#333333"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ElementName=DarkModeToggle, Path=IsChecked}" Value="True">
+                        <Setter Property="Foreground" Value="White"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="300"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="PHQ-9 Questionnaire" FontSize="28" FontWeight="Bold" 
+                       HorizontalAlignment="Center" Margin="0,0,0,20" 
+                       Style="{StaticResource DarkModeText}"/>
+            <ToggleButton x:Name="DarkModeToggle" Grid.Column="1" Content="Dark Mode" 
+                          Checked="DarkModeToggle_Checked" Unchecked="DarkModeToggle_Unchecked"/>
+        </Grid>
+
+        <ProgressBar x:Name="QuestionProgressBar" Grid.Row="1" Height="10" 
+                     Margin="0,0,0,10" Foreground="#4CAF50"/>
+
+        <Border Grid.Row="2" x:Name="QuestionsBorder" Background="White" 
+                CornerRadius="10" Padding="20" Margin="0,0,0,20">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="QuestionsPanel">
+                    <!-- Questions will be added here programmatically -->
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <TextBlock Grid.Row="3" x:Name="ProgressText" HorizontalAlignment="Center" 
+                   Margin="0,0,0,10" Style="{StaticResource DarkModeText}"/>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
+            <Button Content="Calculate Score" Style="{StaticResource ButtonStyle}" Click="CalculateScore_Click"/>
+            <Button Content="Save Results" Style="{StaticResource ButtonStyle}" Click="SaveResults_Click"/>
+        </StackPanel>
+
+        <Border Grid.Row="5" x:Name="ChartBorder" Background="White" CornerRadius="10" Padding="20">
+            <ScottPlot:WpfPlot x:Name="ScoreChart"/>
+        </Border>
+    </Grid>
+</Window>
