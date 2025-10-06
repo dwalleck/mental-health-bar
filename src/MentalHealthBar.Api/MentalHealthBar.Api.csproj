@@ -16,6 +16,8 @@
     <PackageReference Include="OneOf" />
     <PackageReference Include="Humanizer" />
     <PackageReference Include="NewId" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="AspNetCore.HealthChecks.Npgsql" />
   </ItemGroup>
 
 </Project>

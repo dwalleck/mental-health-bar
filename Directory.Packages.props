@@ -19,6 +19,8 @@
     <PackageVersion Include="Polly" Version="8.4.2" />
     <PackageVersion Include="Humanizer" Version="2.14.1" />
     <PackageVersion Include="NewId" Version="4.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.0-rc.1.25451.107" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Npgsql" Version="9.0.0" />
 
     <!-- API Documentation -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0-rc.1.25451.107" />

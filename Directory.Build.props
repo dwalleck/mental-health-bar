@@ -5,7 +5,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);CS8618</NoWarn> <!-- Suppress nullable warnings for uninitialized properties -->
+
+    <!-- TEMPORARY: CS8618 suppressed during infrastructure setup (Phase 3.1) -->
+    <!-- TODO: Remove this suppression when adding domain models in Phase 3.3 -->
+    <!-- Properly initialize all nullable properties or mark as nullable -->
+    <!-- This suppression prevents warnings on EF Core entity constructors -->
+    <NoWarn>$(NoWarn);CS8618</NoWarn>
   </PropertyGroup>
 
   <!-- Code analysis settings -->

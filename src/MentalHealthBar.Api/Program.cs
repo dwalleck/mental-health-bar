@@ -52,6 +52,14 @@ else
     Log.Warning("CORS is disabled - no allowed origins configured");
 }
 
+// Add Health Checks
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>("database", tags: new[] { "db", "ready" })
+    .AddNpgSql(
+        builder.Configuration.GetConnectionString("DefaultConnection")!,
+        name: "postgres",
+        tags: new[] { "db", "ready" });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -72,9 +80,41 @@ if (corsOrigins.Length > 0)
 // API endpoints will be registered here
 // Example: app.MapGroup("/api/assessments").MapAssessmentsEndpoints();
 
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
-   .WithName("HealthCheck")
-   .WithTags("Health");
+// Health check endpoints
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            timestamp = DateTime.UtcNow,
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                duration = e.Value.Duration.TotalMilliseconds,
+                description = e.Value.Description,
+                exception = e.Value.Exception?.Message
+            })
+        });
+        await context.Response.WriteAsync(result);
+    }
+}).WithName("HealthCheck").WithTags("Health");
+
+// Liveness probe - quick check without dependencies
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => false
+}).WithName("LivenessCheck").WithTags("Health");
+
+// Readiness probe - includes database checks
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+}).WithName("ReadinessCheck").WithTags("Health");
 
 try
 {
