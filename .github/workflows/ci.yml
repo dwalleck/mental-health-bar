@@ -1,0 +1,88 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main, 001-build-an-application ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 10 RC
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+        dotnet-quality: 'preview'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build solution
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Run tests with coverage
+      run: dotnet test --no-build --configuration Release --collect:"Code Coverage" --logger "trx;LogFileName=test-results.trx"
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}
+        path: '**/TestResults/**/*.trx'
+
+    - name: Upload coverage reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-${{ matrix.os }}
+        path: '**/TestResults/**/*.coverage'
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 10 RC
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+        dotnet-quality: 'preview'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Format check
+      run: dotnet format --verify-no-changes --no-restore
+
+  status-check:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [build-and-test, lint]
+    if: always()
+
+    steps:
+    - name: Check build status
+      run: |
+        if [ "${{ needs.build-and-test.result }}" != "success" ]; then
+          echo "Build and test failed"
+          exit 1
+        fi
+        if [ "${{ needs.lint.result }}" != "success" ]; then
+          echo "Linting failed"
+          exit 1
+        fi
+        echo "All checks passed!"

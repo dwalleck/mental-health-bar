@@ -1,0 +1,395 @@
+openapi: 3.0.3
+info:
+  title: Mental Health Bar - Assessments API
+  version: 0.1.0
+  description: API endpoints for managing standardized mental health assessments
+
+paths:
+  /api/assessments/templates:
+    get:
+      summary: Get all assessment templates
+      description: Returns list of available assessment types with questions
+      operationId: getAssessmentTemplates
+      tags:
+        - Assessments
+      responses:
+        '200':
+          description: List of assessment templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssessmentTemplate'
+
+  /api/assessments/templates/{type}:
+    get:
+      summary: Get assessment template by type
+      description: Returns questions and scoring rules for specific assessment
+      operationId: getAssessmentTemplate
+      tags:
+        - Assessments
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/AssessmentType'
+      responses:
+        '200':
+          description: Assessment template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentTemplate'
+        '404':
+          description: Assessment type not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /api/assessments:
+    post:
+      summary: Complete an assessment
+      description: Submit responses and calculate score
+      operationId: completeAssessment
+      tags:
+        - Assessments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteAssessmentRequest'
+      responses:
+        '201':
+          description: Assessment completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentResponse'
+        '400':
+          description: Invalid request (incomplete responses, invalid values)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+
+    get:
+      summary: Get assessment history
+      description: Returns all completed assessments, optionally filtered by type
+      operationId: getAssessmentHistory
+      tags:
+        - Assessments
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AssessmentType'
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: List of completed assessments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentHistoryResponse'
+
+  /api/assessments/{id}:
+    get:
+      summary: Get assessment by ID
+      description: Returns details of a specific completed assessment
+      operationId: getAssessment
+      tags:
+        - Assessments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Assessment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentResponse'
+        '404':
+          description: Assessment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    delete:
+      summary: Delete an assessment
+      description: Permanently deletes a completed assessment
+      operationId: deleteAssessment
+      tags:
+        - Assessments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Assessment deleted successfully
+        '404':
+          description: Assessment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+components:
+  schemas:
+    AssessmentType:
+      type: string
+      enum:
+        - PHQ9
+        - BDI
+        - GAD7
+        - BAI
+
+    SeverityLevel:
+      type: string
+      enum:
+        - Minimal
+        - Mild
+        - Moderate
+        - ModeratelySevere
+        - Severe
+
+    AssessmentTemplate:
+      type: object
+      required:
+        - type
+        - name
+        - description
+        - questions
+        - scoringRules
+      properties:
+        type:
+          $ref: '#/components/schemas/AssessmentType'
+        name:
+          type: string
+          example: "Patient Health Questionnaire (PHQ-9)"
+        description:
+          type: string
+          example: "9-item depression screening tool"
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+        scoringRules:
+          $ref: '#/components/schemas/ScoringRules'
+
+    Question:
+      type: object
+      required:
+        - id
+        - text
+        - options
+      properties:
+        id:
+          type: string
+          example: "Q1"
+        text:
+          type: string
+          example: "Little interest or pleasure in doing things"
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerOption'
+
+    AnswerOption:
+      type: object
+      required:
+        - value
+        - label
+      properties:
+        value:
+          type: integer
+          minimum: 0
+          maximum: 3
+        label:
+          type: string
+          example: "Not at all"
+
+    ScoringRules:
+      type: object
+      required:
+        - minScore
+        - maxScore
+        - severityRanges
+      properties:
+        minScore:
+          type: integer
+        maxScore:
+          type: integer
+        severityRanges:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SeverityLevel'
+
+    CompleteAssessmentRequest:
+      type: object
+      required:
+        - type
+        - responses
+      properties:
+        type:
+          $ref: '#/components/schemas/AssessmentType'
+        responses:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+            maximum: 3
+          example:
+            Q1: 2
+            Q2: 1
+            Q3: 3
+        completedAt:
+          type: string
+          format: date-time
+          description: Optional - defaults to current time if not provided
+
+    AssessmentResponse:
+      type: object
+      required:
+        - id
+        - type
+        - completedAt
+        - responses
+        - totalScore
+        - severity
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/AssessmentType'
+        completedAt:
+          type: string
+          format: date-time
+        responses:
+          type: object
+          additionalProperties:
+            type: integer
+        totalScore:
+          type: integer
+        severity:
+          $ref: '#/components/schemas/SeverityLevel'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    AssessmentHistoryResponse:
+      type: object
+      required:
+        - items
+        - totalCount
+        - page
+        - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentSummary'
+        totalCount:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    AssessmentSummary:
+      type: object
+      required:
+        - id
+        - type
+        - completedAt
+        - totalScore
+        - severity
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/AssessmentType'
+        completedAt:
+          type: string
+          format: date-time
+        totalScore:
+          type: integer
+        severity:
+          $ref: '#/components/schemas/SeverityLevel'
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+
+    ValidationProblemDetails:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string

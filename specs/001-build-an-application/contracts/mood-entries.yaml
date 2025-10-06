@@ -1,0 +1,377 @@
+openapi: 3.0.3
+info:
+  title: Mental Health Bar - Mood Entries API
+  version: 0.1.0
+  description: API endpoints for tracking daily mood entries
+
+paths:
+  /api/mood-entries:
+    post:
+      summary: Create a mood entry
+      description: Log a mood score with optional tags and notes
+      operationId: createMoodEntry
+      tags:
+        - MoodEntries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMoodEntryRequest'
+      responses:
+        '201':
+          description: Mood entry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoodEntryResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+
+    get:
+      summary: Get mood entry history
+      description: Returns all mood entries within date range
+      operationId: getMoodEntryHistory
+      tags:
+        - MoodEntries
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: tags
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          description: Filter by tags (OR logic - any tag matches)
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 500
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: List of mood entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoodEntryHistoryResponse'
+
+  /api/mood-entries/{id}:
+    get:
+      summary: Get mood entry by ID
+      description: Returns details of a specific mood entry
+      operationId: getMoodEntry
+      tags:
+        - MoodEntries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Mood entry details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoodEntryResponse'
+        '404':
+          description: Mood entry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    put:
+      summary: Update a mood entry
+      description: Modify mood score, tags, or notes
+      operationId: updateMoodEntry
+      tags:
+        - MoodEntries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMoodEntryRequest'
+      responses:
+        '200':
+          description: Mood entry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoodEntryResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '404':
+          description: Mood entry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    delete:
+      summary: Delete a mood entry
+      description: Soft-deletes a mood entry (preserves for audit trail)
+      operationId: deleteMoodEntry
+      tags:
+        - MoodEntries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Mood entry deleted successfully
+        '404':
+          description: Mood entry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /api/mood-entries/stats:
+    get:
+      summary: Get mood statistics
+      description: Returns summary statistics for mood entries in date range
+      operationId: getMoodStats
+      tags:
+        - MoodEntries
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Mood statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoodStatsResponse'
+
+components:
+  schemas:
+    CreateMoodEntryRequest:
+      type: object
+      required:
+        - moodScore
+      properties:
+        moodScore:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "1=Worst, 2=Below Average, 3=Average, 4=Above Average, 5=Best"
+        recordedAt:
+          type: string
+          format: date-time
+          description: Optional - defaults to current time if not provided
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+        notes:
+          type: string
+          maxLength: 500
+
+    UpdateMoodEntryRequest:
+      type: object
+      properties:
+        moodScore:
+          type: integer
+          minimum: 1
+          maximum: 5
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+        notes:
+          type: string
+          maxLength: 500
+          nullable: true
+
+    MoodEntryResponse:
+      type: object
+      required:
+        - id
+        - moodScore
+        - moodLabel
+        - recordedAt
+        - tags
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        moodScore:
+          type: integer
+          minimum: 1
+          maximum: 5
+        moodLabel:
+          type: string
+          enum:
+            - Worst
+            - Below Average
+            - Average
+            - Above Average
+            - Best
+        recordedAt:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    MoodEntryHistoryResponse:
+      type: object
+      required:
+        - items
+        - totalCount
+        - page
+        - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MoodEntryResponse'
+        totalCount:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    MoodStatsResponse:
+      type: object
+      required:
+        - entryCount
+        - averageScore
+        - medianScore
+        - scoreDistribution
+      properties:
+        entryCount:
+          type: integer
+        averageScore:
+          type: number
+          format: double
+        medianScore:
+          type: integer
+        minScore:
+          type: integer
+        maxScore:
+          type: integer
+        scoreDistribution:
+          type: object
+          properties:
+            "1":
+              type: integer
+            "2":
+              type: integer
+            "3":
+              type: integer
+            "4":
+              type: integer
+            "5":
+              type: integer
+        commonTags:
+          type: array
+          items:
+            type: object
+            properties:
+              tag:
+                type: string
+              count:
+                type: integer
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+
+    ValidationProblemDetails:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
