@@ -1,0 +1,241 @@
+openapi: 3.0.3
+info:
+  title: Mental Health Bar - Event Labels API
+  version: 0.1.0
+  description: API endpoints for managing event labels/tags
+
+paths:
+  /api/event-labels:
+    post:
+      summary: Create an event label
+      description: Create a new tag for categorizing mood entries
+      operationId: createEventLabel
+      tags:
+        - EventLabels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventLabelRequest'
+      responses:
+        '201':
+          description: Event label created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLabelResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '409':
+          description: Label with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    get:
+      summary: Get all event labels
+      description: Returns list of all active event labels
+      operationId: getEventLabels
+      tags:
+        - EventLabels
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter labels by name (case-insensitive partial match)
+      responses:
+        '200':
+          description: List of event labels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventLabelResponse'
+
+  /api/event-labels/{id}:
+    get:
+      summary: Get event label by ID
+      description: Returns details of a specific event label
+      operationId: getEventLabel
+      tags:
+        - EventLabels
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event label details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLabelResponse'
+        '404':
+          description: Event label not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    put:
+      summary: Update an event label
+      description: Modify label name or description
+      operationId: updateEventLabel
+      tags:
+        - EventLabels
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventLabelRequest'
+      responses:
+        '200':
+          description: Event label updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventLabelResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '404':
+          description: Event label not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Label with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    delete:
+      summary: Delete an event label
+      description: Soft-deletes an event label (preserves historical mood entry references)
+      operationId: deleteEventLabel
+      tags:
+        - EventLabels
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Event label deleted successfully
+        '404':
+          description: Event label not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+components:
+  schemas:
+    CreateEventLabelRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9 -]+$'
+          example: "work stress"
+        description:
+          type: string
+          maxLength: 200
+
+    UpdateEventLabelRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9 -]+$'
+        description:
+          type: string
+          maxLength: 200
+          nullable: true
+
+    EventLabelResponse:
+      type: object
+      required:
+        - id
+        - name
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+
+    ValidationProblemDetails:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string

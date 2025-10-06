@@ -1,0 +1,287 @@
+openapi: 3.0.3
+info:
+  title: Mental Health Bar - Health Metrics API
+  version: 0.1.0
+  description: API endpoints for tracking health metrics (sleep, water intake)
+
+paths:
+  /api/health-metrics:
+    post:
+      summary: Record a health metric
+      description: Log sleep hours or water intake for a specific date
+      operationId: recordHealthMetric
+      tags:
+        - HealthMetrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordHealthMetricRequest'
+      responses:
+        '201':
+          description: Health metric recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthMetricResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '409':
+          description: Metric already exists for this date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    get:
+      summary: Get health metric history
+      description: Returns all health metrics within date range
+      operationId: getHealthMetricHistory
+      tags:
+        - HealthMetrics
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/MetricType'
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 365
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        '200':
+          description: List of health metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthMetricHistoryResponse'
+
+  /api/health-metrics/{id}:
+    get:
+      summary: Get health metric by ID
+      description: Returns details of a specific health metric entry
+      operationId: getHealthMetric
+      tags:
+        - HealthMetrics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Health metric details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthMetricResponse'
+        '404':
+          description: Health metric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    put:
+      summary: Update a health metric
+      description: Modify the value of an existing health metric
+      operationId: updateHealthMetric
+      tags:
+        - HealthMetrics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateHealthMetricRequest'
+      responses:
+        '200':
+          description: Health metric updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthMetricResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationProblemDetails'
+        '404':
+          description: Health metric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    delete:
+      summary: Delete a health metric
+      description: Soft-deletes a health metric entry
+      operationId: deleteHealthMetric
+      tags:
+        - HealthMetrics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Health metric deleted successfully
+        '404':
+          description: Health metric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+components:
+  schemas:
+    MetricType:
+      type: string
+      enum:
+        - SleepHours
+        - WaterIntakeOz
+
+    RecordHealthMetricRequest:
+      type: object
+      required:
+        - type
+        - value
+        - recordedDate
+      properties:
+        type:
+          $ref: '#/components/schemas/MetricType'
+        value:
+          type: number
+          format: double
+          description: "Sleep: 0-24 hours, Water: 0-200 fl oz"
+        recordedDate:
+          type: string
+          format: date
+
+    UpdateHealthMetricRequest:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          type: number
+          format: double
+
+    HealthMetricResponse:
+      type: object
+      required:
+        - id
+        - type
+        - value
+        - recordedDate
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/MetricType'
+        value:
+          type: number
+          format: double
+        recordedDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    HealthMetricHistoryResponse:
+      type: object
+      required:
+        - items
+        - totalCount
+        - page
+        - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HealthMetricResponse'
+        totalCount:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+
+    ValidationProblemDetails:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string

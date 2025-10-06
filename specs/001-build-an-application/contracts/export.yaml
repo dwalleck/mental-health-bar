@@ -1,0 +1,207 @@
+openapi: 3.0.3
+info:
+  title: Mental Health Bar - Export API
+  version: 0.1.0
+  description: API endpoints for exporting data to CSV and JSON formats
+
+paths:
+  /api/export/csv:
+    post:
+      summary: Export data to CSV
+      description: Generates CSV file containing all user data
+      operationId: exportToCsv
+      tags:
+        - Export
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '200':
+          description: CSV file generated successfully
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="mental-health-data-2025-10-05.csv"'
+        '400':
+          description: Invalid date range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /api/export/json:
+    post:
+      summary: Export data to JSON
+      description: Generates JSON file containing all user data
+      operationId: exportToJson
+      tags:
+        - Export
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+      responses:
+        '200':
+          description: JSON file generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportDataResponse'
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="mental-health-data-2025-10-05.json"'
+        '400':
+          description: Invalid date range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+components:
+  schemas:
+    ExportRequest:
+      type: object
+      properties:
+        startDate:
+          type: string
+          format: date-time
+          description: Optional - defaults to beginning of data
+        endDate:
+          type: string
+          format: date-time
+          description: Optional - defaults to current time
+        includeAssessments:
+          type: boolean
+          default: true
+        includeMoodEntries:
+          type: boolean
+          default: true
+        includeHealthMetrics:
+          type: boolean
+          default: true
+
+    ExportDataResponse:
+      type: object
+      required:
+        - exportedAt
+        - dateRange
+        - assessments
+        - moodEntries
+        - healthMetrics
+        - eventLabels
+      properties:
+        exportedAt:
+          type: string
+          format: date-time
+        dateRange:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        assessments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportedAssessment'
+        moodEntries:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportedMoodEntry'
+        healthMetrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportedHealthMetric'
+        eventLabels:
+          type: array
+          items:
+            type: string
+          description: Distinct list of all tags used
+
+    ExportedAssessment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+        totalScore:
+          type: integer
+        severity:
+          type: string
+        responses:
+          type: object
+          additionalProperties:
+            type: integer
+
+    ExportedMoodEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        moodScore:
+          type: integer
+        moodLabel:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        notes:
+          type: string
+          nullable: true
+
+    ExportedHealthMetric:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        value:
+          type: number
+        recordedDate:
+          type: string
+          format: date
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
