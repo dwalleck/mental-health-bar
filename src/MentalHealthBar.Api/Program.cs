@@ -27,16 +27,30 @@ builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 // Add OpenAPI - .NET 10 built-in support
 builder.Services.AddOpenApi();
 
-// Add CORS for local development
-builder.Services.AddCors(options =>
+// Add CORS - Environment-aware configuration
+// PRODUCTION WARNING: Configure allowed origins in appsettings.Production.json
+// Never use AllowAnyOrigin() or wildcard origins in production
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                  ?? Array.Empty<string>();
+
+if (corsOrigins.Length > 0)
 {
-    options.AddDefaultPolicy(policy =>
+    builder.Services.AddCors(options =>
     {
-        policy.WithOrigins("http://localhost:5000", "https://localhost:5001")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.WithOrigins(corsOrigins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
     });
-});
+
+    Log.Information("CORS enabled for origins: {Origins}", string.Join(", ", corsOrigins));
+}
+else
+{
+    Log.Warning("CORS is disabled - no allowed origins configured");
+}
 
 var app = builder.Build();
 
@@ -48,7 +62,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseSerilogRequestLogging();
-app.UseCors();
+
+// Only enable CORS if configured
+if (corsOrigins.Length > 0)
+{
+    app.UseCors();
+}
 
 // API endpoints will be registered here
 // Example: app.MapGroup("/api/assessments").MapAssessmentsEndpoints();
