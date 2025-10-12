@@ -8,13 +8,25 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Bogus" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
     <PackageReference Include="TUnit" />
     <PackageReference Include="Moq" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\MentalHealthBar.Api\MentalHealthBar.Api.csproj" />
+    <ProjectReference Include="..\..\src\MentalHealthBar.Contracts\MentalHealthBar.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\src\MentalHealthBar.Api\appsettings.json" Link="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\src\MentalHealthBar.Api\appsettings.Test.json" Link="appsettings.Test.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,278 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MentalHealthBar.Desktop.ViewModels"
+             xmlns:scottplot="clr-namespace:ScottPlot.Avalonia;assembly=ScottPlot.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="MentalHealthBar.Desktop.Views.DataVisualizationView"
+             x:DataType="vm:DataVisualizationViewModel">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0"
+                   Text="Data Visualization"
+                   FontSize="32"
+                   FontWeight="Bold"
+                   Margin="0,0,0,20" />
+
+        <!-- Controls -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="15"
+                Margin="0,0,0,20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Date Range Selection -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="Date Range:"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold" />
+
+                    <ItemsControl ItemsSource="{Binding DateRangeOptions}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="5" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <RadioButton GroupName="DateRange"
+                                             Content="{Binding Label}"
+                                             IsChecked="{Binding IsSelected}"
+                                             Command="{Binding $parent[ItemsControl].DataContext.SelectDateRangeCommand}"
+                                             CommandParameter="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Chart Type Selection -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="View:"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold" />
+
+                    <ComboBox ItemsSource="{Binding ChartTypes}"
+                              SelectedItem="{Binding SelectedChartType}"
+                              Width="150">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- Mood Chart Options -->
+                <CheckBox Grid.Column="4"
+                          Content="Show Daily Average"
+                          IsChecked="{Binding ShowDailyAverage}"
+                          IsVisible="{Binding IsMoodChartSelected}"
+                          VerticalAlignment="Center" />
+
+                <!-- Refresh Button -->
+                <Button Grid.Column="6"
+                        Command="{Binding RefreshCommand}"
+                        CornerRadius="8"
+                        Padding="10,5">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <TextBlock Text="🔄" FontSize="16" />
+                        <TextBlock Text="Refresh" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Charts Container -->
+        <TabControl Grid.Row="2">
+            <!-- Mood Trends Tab -->
+            <TabItem Header="Mood Trends">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <scottplot:AvaPlot Grid.Row="0"
+                                        Name="MoodChart"
+                                        MinHeight="400" />
+
+                    <!-- Statistics Panel -->
+                    <Border Grid.Row="1"
+                            Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="15"
+                            Margin="0,15,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                <TextBlock Text="Average Mood"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="{Binding MoodAverage, StringFormat='{}{0:F2}'}"
+                                           FontSize="24"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                <TextBlock Text="Entries"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="{Binding MoodEntryCount}"
+                                           FontSize="24"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                <TextBlock Text="Highest"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="{Binding MoodHighest}"
+                                           FontSize="24"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center"
+                                           Foreground="Green" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                                <TextBlock Text="Lowest"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="{Binding MoodLowest}"
+                                           FontSize="24"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center"
+                                           Foreground="OrangeRed" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- Assessment Trends Tab -->
+            <TabItem Header="Assessment Trends">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Assessment Type Filter -->
+                    <ComboBox Grid.Row="0"
+                              ItemsSource="{Binding AssessmentTypes}"
+                              SelectedItem="{Binding SelectedAssessmentType}"
+                              Width="200"
+                              HorizontalAlignment="Left"
+                              Margin="0,0,0,10" />
+
+                    <scottplot:AvaPlot Grid.Row="1"
+                                        Name="AssessmentChart"
+                                        MinHeight="400" />
+                </Grid>
+            </TabItem>
+
+            <!-- Health Metrics Tab -->
+            <TabItem Header="Health Metrics">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Sleep Chart -->
+                    <Border Grid.Row="0"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="0,0,0,1"
+                            Padding="0,0,0,10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0"
+                                       Text="Sleep Hours"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,10" />
+
+                            <scottplot:AvaPlot Grid.Row="1"
+                                                Name="SleepChart"
+                                                MinHeight="200" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Water Intake Chart -->
+                    <Border Grid.Row="1"
+                            Padding="0,10,0,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0"
+                                       Text="Water Intake (oz)"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,10" />
+
+                            <scottplot:AvaPlot Grid.Row="1"
+                                                Name="WaterChart"
+                                                MinHeight="200" />
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- Correlations Tab -->
+            <TabItem Header="Correlations">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="Mood vs Health Metrics Correlation"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,15" />
+
+                    <scottplot:AvaPlot Grid.Row="1"
+                                        Name="CorrelationChart"
+                                        MinHeight="400" />
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

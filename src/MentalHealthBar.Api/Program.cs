@@ -1,6 +1,31 @@
+using FluentValidation;
+using MentalHealthBar.Api.Features.Assessments.Complete;
+using MentalHealthBar.Api.Features.Assessments.Delete;
+using MentalHealthBar.Api.Features.Assessments.GetById;
+using MentalHealthBar.Api.Features.Assessments.GetHistory;
+using MentalHealthBar.Api.Features.Assessments.GetTemplate;
+using MentalHealthBar.Api.Features.Assessments.GetTemplates;
 using MentalHealthBar.Api.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using CreateMoodEntry = MentalHealthBar.Api.Features.MoodEntries.Create.Endpoint;
+using GetMoodHistory = MentalHealthBar.Api.Features.MoodEntries.GetHistory.Endpoint;
+using GetMoodById = MentalHealthBar.Api.Features.MoodEntries.GetById.Endpoint;
+using UpdateMoodEntry = MentalHealthBar.Api.Features.MoodEntries.Update.Endpoint;
+using DeleteMoodEntry = MentalHealthBar.Api.Features.MoodEntries.Delete.Endpoint;
+using GetMoodStats = MentalHealthBar.Api.Features.MoodEntries.GetStats.Endpoint;
+using RecordHealthMetric = MentalHealthBar.Api.Features.HealthMetrics.Record.Endpoint;
+using GetHealthMetricHistory = MentalHealthBar.Api.Features.HealthMetrics.GetHistory.Endpoint;
+using GetHealthMetricById = MentalHealthBar.Api.Features.HealthMetrics.GetById.Endpoint;
+using UpdateHealthMetric = MentalHealthBar.Api.Features.HealthMetrics.Update.Endpoint;
+using DeleteHealthMetric = MentalHealthBar.Api.Features.HealthMetrics.Delete.Endpoint;
+using CreateEventLabel = MentalHealthBar.Api.Features.EventLabels.Create.Endpoint;
+using ListEventLabels = MentalHealthBar.Api.Features.EventLabels.List.Endpoint;
+using GetEventLabelById = MentalHealthBar.Api.Features.EventLabels.GetById.Endpoint;
+using UpdateEventLabel = MentalHealthBar.Api.Features.EventLabels.Update.Endpoint;
+using DeleteEventLabel = MentalHealthBar.Api.Features.EventLabels.Delete.Endpoint;
+using ExportToCsv = MentalHealthBar.Api.Features.Export.ToCsv.Endpoint;
+using ExportToJson = MentalHealthBar.Api.Features.Export.ToJson.Endpoint;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,13 +41,25 @@ builder.Host.UseSerilog();
 
 // Add services to the container
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), npgsqlOptions =>
+    {
+        // Npgsql should handle Guid[] to uuid[] automatically, but we can ensure proper configuration here if needed
+    });
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+    }
+});
 
 // Add MediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
 // Add FluentValidation
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+
+// Add scoped services
+builder.Services.AddScoped<AssessmentTemplateSeeder>();
 
 // Add OpenAPI - .NET 10 built-in support
 builder.Services.AddOpenApi();
@@ -77,8 +114,39 @@ if (corsOrigins.Length > 0)
     app.UseCors();
 }
 
-// API endpoints will be registered here
-// Example: app.MapGroup("/api/assessments").MapAssessmentsEndpoints();
+// API endpoints - Assessments
+app.MapGetTemplatesEndpoint();
+app.MapGetTemplateEndpoint();
+app.MapCompleteAssessmentEndpoint();
+app.MapGetHistoryEndpoint();
+app.MapGetByIdEndpoint();
+app.MapDeleteEndpoint();
+
+// API endpoints - Mood Entries
+CreateMoodEntry.MapCreateMoodEntryEndpoint(app);
+GetMoodHistory.MapGetMoodHistoryEndpoint(app);
+GetMoodById.MapGetMoodByIdEndpoint(app);
+UpdateMoodEntry.MapUpdateMoodEntryEndpoint(app);
+DeleteMoodEntry.MapDeleteMoodEntryEndpoint(app);
+GetMoodStats.MapGetMoodStatsEndpoint(app);
+
+// API endpoints - Health Metrics
+RecordHealthMetric.MapRecordHealthMetricEndpoint(app);
+GetHealthMetricHistory.MapGetHealthMetricHistoryEndpoint(app);
+GetHealthMetricById.MapGetHealthMetricByIdEndpoint(app);
+UpdateHealthMetric.MapUpdateHealthMetricEndpoint(app);
+DeleteHealthMetric.MapDeleteHealthMetricEndpoint(app);
+
+// API endpoints - Event Labels
+CreateEventLabel.MapCreateEventLabelEndpoint(app);
+ListEventLabels.MapListEventLabelsEndpoint(app);
+GetEventLabelById.MapGetEventLabelByIdEndpoint(app);
+UpdateEventLabel.MapUpdateEventLabelEndpoint(app);
+DeleteEventLabel.MapDeleteEventLabelEndpoint(app);
+
+// API endpoints - Export
+ExportToCsv.MapExportToCsvEndpoint(app);
+ExportToJson.MapExportToJsonEndpoint(app);
 
 // Health check endpoints
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
@@ -116,6 +184,13 @@ app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
     Predicate = check => check.Tags.Contains("ready")
 }).WithName("ReadinessCheck").WithTags("Health");
 
+// Seed assessment templates on startup
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<AssessmentTemplateSeeder>();
+    await seeder.SeedAsync();
+}
+
 try
 {
     Log.Information("Starting Mental Health Bar API");
@@ -129,3 +204,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Make Program accessible to tests
+public partial class Program { }

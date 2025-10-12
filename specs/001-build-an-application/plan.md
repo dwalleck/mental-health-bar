@@ -375,14 +375,195 @@ Frontend → E2E Validation
 - [x] Phase 1: Design complete (/plan command)
 - [x] Phase 2: Task planning complete (/plan command - describe approach only)
 - [x] Phase 3: Tasks generated (/tasks command) - 76 tasks created
-- [ ] Phase 4: Implementation complete
-- [ ] Phase 5: Validation passed
+- [x] Phase 4: Implementation partially complete - 74/76 tasks (97%)
+- [ ] Phase 5: Validation passed - BLOCKED by ViewModel issues
 
 **Gate Status**:
 - [x] Initial Constitution Check: CONDITIONAL PASS
 - [x] Post-Design Constitution Check: PASS
 - [x] All NEEDS CLARIFICATION resolved (see research.md)
 - [x] Complexity deviations documented
+- [x] Backend API: 113 tests passing, fully functional
+- [x] Desktop App: Compiles and launches
+- [ ] Desktop Functionality: 40-50% complete (ViewModels need property completion)
+- [ ] Desktop Tests: 394 compilation errors, 0% passing
+
+**Current Blockers**:
+1. ViewModels missing properties that Views expect (binding errors)
+2. Desktop test project has massive compilation failures
+3. No end-to-end validation completed
+
+---
+
+## Phase 6: Remaining Work for Functional MVP
+
+### Current State Assessment (2025-10-12)
+
+**Backend**: ✅ Fully functional (113 passing tests, all endpoints working)
+**Frontend**: ⚠️ 40-50% functional (compiles but most features non-functional)
+**Tests**: ❌ Desktop tests completely broken (394 errors)
+
+### Remaining Tasks
+
+#### 6.1: Fix ViewModel Property Mismatches (CRITICAL - Estimated 8-12 hours)
+
+**Problem**: Views reference properties that don't exist in ViewModels, causing ~80 binding errors
+
+**T077: DashboardViewModel - Add Missing Properties**
+- **Type**: Implementation (Critical)
+- **File**: `src/MentalHealthBar.Desktop/ViewModels/DashboardViewModel.cs`
+- **Missing Properties**:
+  - `RecentMoodScore` (int), `RecentMoodLabel` (string), `RecentMoodDate` (string) - computed from `RecentMood`
+  - `LastAssessmentType` (string), `LastAssessmentScore` (string), `LastAssessmentSeverity` (string), `LastAssessmentSeverityColor` (brush), `LastAssessmentDate` (string)
+  - `RecentActivities` (ObservableCollection), `HasRecentActivity` (bool)
+- **Acceptance**: All Dashboard XAML bindings resolve without errors
+
+**T078: MoodEntryViewModel - Add Missing Properties**
+- **Type**: Implementation (Critical)
+- **File**: `src/MentalHealthBar.Desktop/ViewModels/MoodEntryViewModel.cs`
+- **Missing Properties**:
+  - `RecordedDate` (DateOnly), `RecordedTime` (TimeOnly) - split from `RecordedAt`
+  - `MoodOptions` (ObservableCollection<MoodOption>) - for UI radio buttons with emojis
+  - `CurrentTagInput` - rename or alias `NewTag`
+  - `AvailableTags` (string[]) - convert from `AvailableLabels`
+  - `SelectedMoodDescription` (string), `ShowTagLimitWarning` (bool), `TagLimitMessage` (string), `CanSave` (bool)
+  - `ClearCommand` - rename or alias `ResetCommand`
+- **Acceptance**: All MoodEntry XAML bindings resolve without errors, mood selection works
+
+**T079: HealthMetricsViewModel - Add Missing Properties**
+- **Type**: Implementation (Critical)
+- **File**: `src/MentalHealthBar.Desktop/ViewModels/HealthMetricsViewModel.cs`
+- **Missing Properties**:
+  - `HasRecentMetrics` (bool)
+  - `EditMetricCommand`, `DeleteMetricCommand`
+  - `WaterIntakeCups` (decimal) - computed from `WaterIntakeOz / 8`
+  - `WaterIntakeMl` (decimal) - computed from `WaterIntakeOz * 29.5735`
+  - `ShowSuccessMessage` (bool), `SuccessMessage` (string)
+  - `ShowWarningMessage` (bool), `WarningMessage` (string)
+- **Acceptance**: All HealthMetrics XAML bindings resolve, conversions display correctly
+
+**T080: AssessmentsViewModel - Add Missing Properties**
+- **Type**: Implementation (Critical)
+- **File**: `src/MentalHealthBar.Desktop/ViewModels/AssessmentsViewModel.cs`
+- **Missing Properties**:
+  - `HasSelectedTemplate` (bool)
+  - `CanSubmitAssessment` (bool)
+  - `CurrentQuestions` (ObservableCollection<QuestionViewModel>)
+  - `ViewDetailsCommand`, `DeleteAssessmentCommand`
+  - `AssessmentTypeFilters` (collection for dropdown)
+  - `RefreshHistoryCommand`
+- **Acceptance**: Assessment selection and completion flow works
+
+**T081: ExportViewModel - Add Missing Properties**
+- **Type**: Implementation (Critical)
+- **File**: `src/MentalHealthBar.Desktop/ViewModels/ExportViewModel.cs`
+- **Missing Properties**:
+  - `IsCsvSelected` (bool), `IsJsonSelected` (bool)
+  - `SelectedDataTypesDescription` (string) - formatted summary
+  - `EstimatedRecordCount` (int)
+  - `ExportedFilePath` (string), `IsExporting` (bool)
+  - `SetLast7DaysCommand`, `SetLast30DaysCommand`, `SetLast90DaysCommand`, `SetAllTimeCommand`
+  - `PreviewCommand`
+- **Acceptance**: Export configuration and execution works
+
+**T082: DataVisualizationViewModel - Add Missing Properties**
+- **Type**: Implementation (Critical)
+- **File**: `src/MentalHealthBar.Desktop/ViewModels/DataVisualizationViewModel.cs`
+- **Missing Properties**:
+  - `MoodAverage` (double), `MoodEntryCount` (int), `MoodHighest` (int), `MoodLowest` (int)
+  - `IsMoodChartSelected` (bool), `ShowDailyAverage` (bool)
+  - `ChartTypes` (collection), `SelectedChartType` (string)
+  - `DateRangeOptions` (collection), `SelectDateRangeCommand`
+  - `SelectedAssessmentType` (string), `AssessmentTypes` (collection)
+- **Acceptance**: Charts render with data, statistics display correctly
+
+**T083: MainWindowViewModel - Add Missing Properties**
+- **Type**: Implementation (Critical)
+- **File**: `src/MentalHealthBar.Desktop/ViewModels/MainWindowViewModel.cs`
+- **Missing Properties**:
+  - `CurrentDateTime` (string) - with timer to update every second
+- **Acceptance**: Header shows current date/time
+
+#### 6.2: Fix Desktop Test Project (Estimated 4-6 hours)
+
+**T084: Fix Test Compilation Errors**
+- **Type**: Bug Fix (High Priority)
+- **File**: `tests/MentalHealthBar.Desktop.Tests/`
+- **Issues**: 394 compilation errors
+  - NUnit syntax mixed with TUnit (fix `[Values]` attributes)
+  - Missing using statements for contracts
+  - Incorrect assertions (Does.Contain, Is.EqualTo need TUnit equivalents)
+  - Mock setup issues for new properties
+- **Acceptance**: Test project compiles with 0 errors
+- **Commands**: `dotnet build tests/MentalHealthBar.Desktop.Tests/`
+
+**T085: Update ViewModel Tests for New Properties**
+- **Type**: Test Update
+- **File**: `tests/MentalHealthBar.Desktop.Tests/ViewModels/`
+- **Work**: Add tests for all newly added properties from T077-T083
+- **Acceptance**: At least 80% of ViewModel functionality tested
+
+#### 6.3: Integration & Validation (Estimated 4-6 hours)
+
+**T086: End-to-End Manual Testing**
+- **Type**: Validation
+- **Prerequisites**: T077-T083 complete
+- **Test Scenarios**:
+  1. Start app → Dashboard loads with data
+  2. Log mood entry → Save succeeds → Appears in history
+  3. Take PHQ-9 assessment → Score calculates → Shows in history
+  4. Record health metrics → Converts units → Saves successfully
+  5. View trends → Charts render → Date filtering works
+  6. Export data → CSV/JSON generated → File contains correct data
+- **Acceptance**: All 6 core user flows complete successfully
+
+**T087: Fix ScottPlot Deprecation Warnings**
+- **Type**: Bug Fix (Low Priority)
+- **File**: `src/MentalHealthBar.Desktop/Services/ChartingService.cs`
+- **Issues**: 6 warnings about obsolete properties (`Scatter.Label` → `LegendText`, `Legend.Location` → `Alignment`)
+- **Acceptance**: Build produces 0 warnings
+
+**T088: Performance Validation** (Optional - deferred from T073)
+- **Type**: Validation
+- **File**: `tests/MentalHealthBar.Api.Benchmarks/`
+- **Work**: Create BenchmarkDotNet tests for export and chart rendering
+- **Acceptance**: Graph rendering <500ms, export <1s
+- **Status**: Optional for MVP, can defer to v0.2.0
+
+#### 6.4: Documentation Updates
+
+**T089: Update README with Actual State**
+- **Type**: Documentation
+- **File**: `README.md`
+- **Updates**: Add known limitations section, update feature status
+- **Acceptance**: README accurately reflects current functionality
+
+**T090: Create CHANGELOG.md**
+- **Type**: Documentation
+- **File**: `CHANGELOG.md`
+- **Content**: Document v0.1.0 release with what's actually complete
+- **Acceptance**: Clear changelog for initial release
+
+---
+
+## Revised Timeline to True MVP
+
+**Estimated Remaining Work**: 16-24 hours
+
+| Phase | Tasks | Hours | Priority |
+|-------|-------|-------|----------|
+| ViewModel Fixes | T077-T083 | 8-12 | CRITICAL |
+| Test Fixes | T084-T085 | 4-6 | HIGH |
+| Integration Testing | T086 | 2-3 | CRITICAL |
+| Polish | T087 | 1 | LOW |
+| Documentation | T089-T090 | 1-2 | MEDIUM |
+| **TOTAL** | **11 tasks** | **16-24** | - |
+
+**Dependencies**:
+- T086 depends on T077-T083 (ViewModels must work first)
+- T085 depends on T077-T083, T084 (tests need both fixes)
+- T089 depends on T086 (know what actually works)
 
 ---
 *Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+*Updated 2025-10-12 after honest assessment of actual completion state*

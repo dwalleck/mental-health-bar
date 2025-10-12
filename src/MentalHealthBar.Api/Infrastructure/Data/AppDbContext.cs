@@ -1,24 +1,25 @@
+using MentalHealthBar.Api.Domain.Assessments;
+using MentalHealthBar.Api.Domain.EventLabels;
+using MentalHealthBar.Api.Domain.HealthMetrics;
+using MentalHealthBar.Api.Domain.MoodEntries;
 using Microsoft.EntityFrameworkCore;
 
 namespace MentalHealthBar.Api.Infrastructure.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-    {
-    }
-
-    // DbSets will be added when domain models are created
-    // public DbSet<Assessment> Assessments => Set<Assessment>();
-    // public DbSet<MoodEntry> MoodEntries => Set<MoodEntry>();
-    // public DbSet<EventLabel> EventLabels => Set<EventLabel>();
-    // public DbSet<HealthMetric> HealthMetrics => Set<HealthMetric>();
+    public DbSet<Assessment> Assessments => Set<Assessment>();
+    public DbSet<AssessmentTemplate> AssessmentTemplates => Set<AssessmentTemplate>();
+    public DbSet<MoodEntry> MoodEntries => Set<MoodEntry>();
+    public DbSet<EventLabel> EventLabels => Set<EventLabel>();
+    public DbSet<MoodEntryEventLabel> MoodEntryEventLabels => Set<MoodEntryEventLabel>();
+    public DbSet<HealthMetric> HealthMetrics => Set<HealthMetric>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Entity configurations will be applied here
-        // modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        // Apply all entity configurations from the assembly
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }

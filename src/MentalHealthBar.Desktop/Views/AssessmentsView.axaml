@@ -1,0 +1,235 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MentalHealthBar.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="MentalHealthBar.Desktop.Views.AssessmentsView"
+             x:DataType="vm:AssessmentsViewModel">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0"
+                   Text="Assessments"
+                   FontSize="32"
+                   FontWeight="Bold"
+                   Margin="0,0,0,20" />
+
+        <!-- Content -->
+        <TabControl Grid.Row="1">
+            <!-- Take Assessment Tab -->
+            <TabItem Header="Take Assessment">
+                <ScrollViewer>
+                    <Grid Margin="20">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Assessment Type Selection -->
+                        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                            <TextBlock Text="Select Assessment Type"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,10" />
+
+                            <ComboBox ItemsSource="{Binding AssessmentTemplates}"
+                                      SelectedItem="{Binding SelectedTemplate}"
+                                      HorizontalAlignment="Stretch"
+                                      Height="40">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock>
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0} - {1}">
+                                                    <Binding Path="Name" />
+                                                    <Binding Path="Description" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!-- Assessment Description -->
+                        <Border Grid.Row="1"
+                                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="15"
+                                Margin="0,0,0,20"
+                                IsVisible="{Binding HasSelectedTemplate}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding SelectedTemplate.Name}"
+                                           FontSize="20"
+                                           FontWeight="Bold"
+                                           Margin="0,0,0,10" />
+                                <TextBlock Text="{Binding SelectedTemplate.Description}"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                                <TextBlock Margin="0,10,0,0">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="Number of questions: {0}">
+                                            <Binding Path="SelectedTemplate.QuestionCount" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Questions -->
+                        <ScrollViewer Grid.Row="2"
+                                      IsVisible="{Binding HasSelectedTemplate}">
+                            <ItemsControl ItemsSource="{Binding CurrentQuestions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="8"
+                                                Padding="15"
+                                                Margin="0,0,0,15">
+                                            <StackPanel>
+                                                <TextBlock FontWeight="SemiBold"
+                                                           Margin="0,0,0,10">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding StringFormat="Question {0}: {1}">
+                                                            <Binding Path="Number" />
+                                                            <Binding Path="Text" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+
+                                                <ItemsControl ItemsSource="{Binding Options}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Vertical" Spacing="5" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <RadioButton GroupName="{Binding $parent[ItemsControl].DataContext.Id}"
+                                                                         IsChecked="{Binding IsSelected}"
+                                                                         Command="{Binding $parent[ItemsControl].DataContext.SelectOptionCommand}"
+                                                                         CommandParameter="{Binding}">
+                                                                <TextBlock>
+                                                                    <TextBlock.Text>
+                                                                        <MultiBinding StringFormat="({0}) {1}">
+                                                                            <Binding Path="Value" />
+                                                                            <Binding Path="Label" />
+                                                                        </MultiBinding>
+                                                                    </TextBlock.Text>
+                                                                </TextBlock>
+                                                            </RadioButton>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <!-- Submit Button -->
+                        <StackPanel Grid.Row="3"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    IsVisible="{Binding HasSelectedTemplate}">
+                            <Button Command="{Binding SubmitAssessmentCommand}"
+                                    IsEnabled="{Binding CanSubmitAssessment}"
+                                    Width="150"
+                                    Height="40"
+                                    CornerRadius="8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Submit" FontSize="16" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- History Tab -->
+            <TabItem Header="History">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Filter Controls -->
+                    <StackPanel Grid.Row="0"
+                                Orientation="Horizontal"
+                                Margin="0,0,0,20"
+                                Spacing="10">
+                        <ComboBox ItemsSource="{Binding AssessmentTypeFilters}"
+                                  SelectedItem="{Binding SelectedTypeFilter}"
+                                  Width="200"
+                                  PlaceholderText="All Types" />
+
+                        <ComboBox ItemsSource="{Binding DateRangeOptions}"
+                                  SelectedItem="{Binding SelectedDateRange}"
+                                  Width="150" />
+
+                        <Button Command="{Binding RefreshHistoryCommand}"
+                                CornerRadius="8">
+                            <TextBlock Text="Refresh" />
+                        </Button>
+                    </StackPanel>
+
+                    <!-- History Grid -->
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding AssessmentHistory}"
+                              AutoGenerateColumns="False"
+                              CanUserResizeColumns="True"
+                              GridLinesVisibility="Horizontal"
+                              BorderThickness="1"
+                              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Date"
+                                                Binding="{Binding CompletedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
+                                                Width="150" />
+                            <DataGridTextColumn Header="Type"
+                                                Binding="{Binding TypeName}"
+                                                Width="100" />
+                            <DataGridTextColumn Header="Score"
+                                                Binding="{Binding TotalScore}"
+                                                Width="80" />
+                            <DataGridTextColumn Header="Severity"
+                                                Binding="{Binding SeverityLabel}"
+                                                Width="120" />
+                            <DataGridTemplateColumn Header="Actions" Width="150">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <Button Command="{Binding $parent[DataGrid].DataContext.ViewDetailsCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="View"
+                                                    Padding="5,2"
+                                                    CornerRadius="4" />
+                                            <Button Command="{Binding $parent[DataGrid].DataContext.DeleteAssessmentCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="Delete"
+                                                    Padding="5,2"
+                                                    CornerRadius="4" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

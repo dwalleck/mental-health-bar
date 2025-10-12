@@ -20,4 +20,8 @@
     <PackageReference Include="AspNetCore.HealthChecks.Npgsql" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MentalHealthBar.Contracts\MentalHealthBar.Contracts.csproj" />
+  </ItemGroup>
+
 </Project>

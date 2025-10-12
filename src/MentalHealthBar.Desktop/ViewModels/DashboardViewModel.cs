@@ -1,0 +1,181 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Reactive;
+using System.Threading.Tasks;
+using ReactiveUI;
+using MentalHealthBar.Desktop.Services;
+
+namespace MentalHealthBar.Desktop.ViewModels;
+
+public class DashboardViewModel : ViewModelBase
+{
+    private readonly IApiClient _apiClient;
+    private MoodEntryResponse? _recentMood;
+    private AssessmentResponse? _lastAssessment;
+    private ObservableCollection<string> _quickStats;
+    private bool _isLoading;
+
+    public DashboardViewModel(IApiClient apiClient)
+    {
+        _apiClient = apiClient;
+        _quickStats = new ObservableCollection<string>();
+
+        LogMoodCommand = ReactiveCommand.CreateFromTask(NavigateToMoodEntry);
+        TakeAssessmentCommand = ReactiveCommand.CreateFromTask(NavigateToAssessments);
+        ViewTrendsCommand = ReactiveCommand.CreateFromTask(NavigateToTrends);
+        RefreshCommand = ReactiveCommand.CreateFromTask(LoadDashboardData);
+
+        // Load data on creation
+        _ = LoadDashboardData();
+    }
+
+    public MoodEntryResponse? RecentMood
+    {
+        get => _recentMood;
+        set => this.RaiseAndSetIfChanged(ref _recentMood, value);
+    }
+
+    public AssessmentResponse? LastAssessment
+    {
+        get => _lastAssessment;
+        set => this.RaiseAndSetIfChanged(ref _lastAssessment, value);
+    }
+
+    public ObservableCollection<string> QuickStats
+    {
+        get => _quickStats;
+        set => this.RaiseAndSetIfChanged(ref _quickStats, value);
+    }
+
+    public bool IsLoading
+    {
+        get => _isLoading;
+        set => this.RaiseAndSetIfChanged(ref _isLoading, value);
+    }
+
+    public ReactiveCommand<Unit, Unit> LogMoodCommand { get; }
+    public ReactiveCommand<Unit, Unit> TakeAssessmentCommand { get; }
+    public ReactiveCommand<Unit, Unit> ViewTrendsCommand { get; }
+    public ReactiveCommand<Unit, Unit> RefreshCommand { get; }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            IsLoading = true;
+            QuickStats.Clear();
+
+            // Load recent mood entry
+            var moodHistory = await _apiClient.GetMoodHistoryAsync(
+                startDate: DateTime.Now.AddDays(-7),
+                endDate: DateTime.Now,
+                pageSize: 1);
+
+            RecentMood = moodHistory.FirstOrDefault();
+
+            if (RecentMood != null)
+            {
+                QuickStats.Add($"Last Mood: {RecentMood.MoodScore}/5 ({GetMoodLabel(RecentMood.MoodScore)})");
+                QuickStats.Add($"Logged: {RecentMood.RecordedAt:g}");
+            }
+            else
+            {
+                QuickStats.Add("No recent mood entries");
+            }
+
+            // Load last assessment
+            var assessmentHistory = await _apiClient.GetAssessmentHistoryAsync(
+                startDate: DateTime.Now.AddDays(-30),
+                endDate: DateTime.Now,
+                pageSize: 1);
+
+            LastAssessment = assessmentHistory.FirstOrDefault();
+
+            if (LastAssessment != null)
+            {
+                QuickStats.Add($"Last Assessment: {LastAssessment.Type}");
+                QuickStats.Add($"Score: {LastAssessment.TotalScore} ({LastAssessment.Severity})");
+                QuickStats.Add($"Completed: {LastAssessment.CompletedAt:d}");
+            }
+            else
+            {
+                QuickStats.Add("No recent assessments");
+            }
+
+            // Load mood statistics for the week
+            var moodStats = await _apiClient.GetMoodStatsAsync(
+                startDate: DateTime.Now.AddDays(-7),
+                endDate: DateTime.Now);
+
+            if (moodStats != null && moodStats.Count > 0)
+            {
+                QuickStats.Add($"Week Average Mood: {moodStats.Average:F1}/5");
+                QuickStats.Add($"Total Entries: {moodStats.Count}");
+            }
+
+            // Load health metrics summary
+            var healthMetrics = await _apiClient.GetHealthMetricsHistoryAsync(
+                startDate: DateTime.Now.AddDays(-7),
+                endDate: DateTime.Now);
+
+            if (healthMetrics.Any())
+            {
+                var sleepMetrics = healthMetrics.Where(m => m.Type == "SleepHours").ToList();
+                var waterMetrics = healthMetrics.Where(m => m.Type == "WaterIntakeOz").ToList();
+
+                if (sleepMetrics.Any())
+                {
+                    var avgSleep = sleepMetrics.Average(m => m.Value);
+                    QuickStats.Add($"Avg Sleep (week): {avgSleep:F1} hours");
+                }
+
+                if (waterMetrics.Any())
+                {
+                    var avgWater = waterMetrics.Average(m => m.Value);
+                    QuickStats.Add($"Avg Water (week): {avgWater:F0} oz");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            QuickStats.Clear();
+            QuickStats.Add($"Error loading data: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private string GetMoodLabel(int score)
+    {
+        return score switch
+        {
+            1 => "Worst",
+            2 => "Below Average",
+            3 => "Average",
+            4 => "Above Average",
+            5 => "Best",
+            _ => "Unknown"
+        };
+    }
+
+    private async Task NavigateToMoodEntry()
+    {
+        // TODO: Navigate to mood entry view
+        await Task.CompletedTask;
+    }
+
+    private async Task NavigateToAssessments()
+    {
+        // TODO: Navigate to assessments view
+        await Task.CompletedTask;
+    }
+
+    private async Task NavigateToTrends()
+    {
+        // TODO: Navigate to data visualization view
+        await Task.CompletedTask;
+    }
+}

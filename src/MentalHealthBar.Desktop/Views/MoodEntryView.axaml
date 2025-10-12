@@ -1,0 +1,265 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MentalHealthBar.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="MentalHealthBar.Desktop.Views.MoodEntryView"
+             x:DataType="vm:MoodEntryViewModel">
+
+    <ScrollViewer>
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <TextBlock Grid.Row="0"
+                       Text="Log Mood Entry"
+                       FontSize="32"
+                       FontWeight="Bold"
+                       Margin="0,0,0,20" />
+
+            <!-- Entry Form -->
+            <StackPanel Grid.Row="1" MaxWidth="600">
+                <!-- Date/Time Selection -->
+                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20"
+                        Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="When?"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,10" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="20" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Date" Margin="0,0,0,5" />
+                                <DatePicker SelectedDate="{Binding RecordedDate}"
+                                            HorizontalAlignment="Stretch" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Time" Margin="0,0,0,5" />
+                                <TimePicker SelectedTime="{Binding RecordedTime}"
+                                            HorizontalAlignment="Stretch" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Mood Score Selection -->
+                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20"
+                        Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="How are you feeling?"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,15" />
+
+                        <ItemsControl ItemsSource="{Binding MoodOptions}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="5" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="5">
+                                        <RadioButton GroupName="MoodScore"
+                                                     IsChecked="{Binding IsSelected}"
+                                                     Command="{Binding $parent[ItemsControl].DataContext.SelectMoodCommand}"
+                                                     CommandParameter="{Binding}"
+                                                     HorizontalAlignment="Center">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding Emoji}"
+                                                           FontSize="36"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,0,0,5" />
+                                                <TextBlock Text="{Binding Value}"
+                                                           FontSize="20"
+                                                           FontWeight="Bold"
+                                                           HorizontalAlignment="Center" />
+                                                <TextBlock Text="{Binding Label}"
+                                                           FontSize="12"
+                                                           HorizontalAlignment="Center"
+                                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                                            </StackPanel>
+                                        </RadioButton>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="{Binding SelectedMoodDescription}"
+                                   FontStyle="Italic"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,15,0,0"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Tags -->
+                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20"
+                        Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="What's happening? (Optional)"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,10" />
+
+                        <TextBlock Text="Add tags to track patterns and triggers"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   Margin="0,0,0,10" />
+
+                        <!-- Tag Input -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <AutoCompleteBox Grid.Column="0"
+                                             ItemsSource="{Binding AvailableTags}"
+                                             Text="{Binding CurrentTagInput}"
+                                             Watermark="Type to add tags (e.g., work, exercise, stress)"
+                                             MinimumPrefixLength="1" />
+
+                            <Button Grid.Column="1"
+                                    Command="{Binding AddTagCommand}"
+                                    Content="Add"
+                                    Margin="5,0,0,0"
+                                    Padding="10,5"
+                                    CornerRadius="4" />
+                        </Grid>
+
+                        <!-- Selected Tags -->
+                        <ItemsControl ItemsSource="{Binding SelectedTags}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource SystemAccentColor}"
+                                            CornerRadius="12"
+                                            Padding="10,5"
+                                            Margin="0,0,5,5">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding}"
+                                                       Foreground="White"
+                                                       Margin="0,0,5,0" />
+                                            <Button Command="{Binding $parent[ItemsControl].DataContext.RemoveTagCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="×"
+                                                    Foreground="White"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    Padding="2,0"
+                                                    FontSize="16"
+                                                    Cursor="Hand" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="{Binding TagLimitMessage}"
+                                   FontSize="12"
+                                   Foreground="Orange"
+                                   Margin="0,5,0,0"
+                                   IsVisible="{Binding ShowTagLimitWarning}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Notes -->
+                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20"
+                        Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="Additional Notes (Optional)"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,10" />
+
+                        <TextBox Text="{Binding Notes}"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 Height="100"
+                                 Watermark="Any additional thoughts or context..."
+                                 MaxLength="500" />
+
+                        <TextBlock HorizontalAlignment="Right"
+                                   Margin="0,5,0,0"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0}/500 characters">
+                                    <Binding Path="Notes.Length" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- Action Buttons -->
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Spacing="10">
+                    <Button Command="{Binding ClearCommand}"
+                            Content="Clear"
+                            Width="100"
+                            Height="40"
+                            CornerRadius="8" />
+
+                    <Button Command="{Binding SaveCommand}"
+                            IsEnabled="{Binding CanSave}"
+                            Width="150"
+                            Height="40"
+                            CornerRadius="8">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Save Entry" FontSize="16" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Success Message - placeholder -->
+                <!--<Border Background="LightGreen"
+                        BorderBrush="Green"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="15"
+                        Margin="0,20,0,0"
+                        IsVisible="False">
+                    <TextBlock Text="Entry saved successfully!"
+                               HorizontalAlignment="Center"
+                               Foreground="DarkGreen" />
+                </Border>-->
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

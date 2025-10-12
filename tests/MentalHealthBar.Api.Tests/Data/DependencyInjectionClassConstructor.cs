@@ -8,10 +8,11 @@ public class DependencyInjectionClassConstructor : IClassConstructor
     {
         Console.WriteLine(@"You can also control how your test classes are new'd up, giving you lots of power and the ability to utilise tools such as dependency injection");
 
-        if (type == typeof(AndEvenMoreTests))
-        {
-            return Task.FromResult<object>(new AndEvenMoreTests(new DataClass()));
-        }
+        // TODO: Implement custom class construction when needed
+        // if (type == typeof(AndEvenMoreTests))
+        // {
+        //     return Task.FromResult<object>(new AndEvenMoreTests(new DataClass()));
+        // }
 
         throw new NotImplementedException();
     }
