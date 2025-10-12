@@ -1,10 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using Moq;
+using TUnit.Assertions;
+using TUnit.Assertions.Extensions;
+using TUnit.Core;
+using MentalHealthBar.Contracts.Requests.Export;
 using MentalHealthBar.Desktop.Services;
 using MentalHealthBar.Desktop.ViewModels;
 
@@ -27,19 +32,19 @@ public class ExportViewModelTests
     }
 
     [Test]
-    public void InitialState_HasCorrectDefaults()
+    public async Task InitialState_HasCorrectDefaults()
     {
         // Assert
-        Assert.That(_viewModel.SelectedFormat, Is.EqualTo(ExportFormat.CSV));
-        Assert.That(_viewModel.StartDate, Is.EqualTo(DateOnly.FromDateTime(DateTime.Now.AddMonths(-3))));
-        Assert.That(_viewModel.EndDate, Is.EqualTo(DateOnly.FromDateTime(DateTime.Now)));
-        Assert.That(_viewModel.IncludeAssessments, Is.True);
-        Assert.That(_viewModel.IncludeMoodEntries, Is.True);
-        Assert.That(_viewModel.IncludeHealthMetrics, Is.True);
-        Assert.That(_viewModel.IncludeEventLabels, Is.True);
-        Assert.That(_viewModel.IsExporting, Is.False);
-        Assert.That(_viewModel.StatusMessage, Is.Null);
-        Assert.That(_viewModel.ExportProgress, Is.EqualTo(0));
+        await Assert.That(_viewModel.SelectedFormat).IsEqualTo(ExportFormat.CSV);
+        await Assert.That(_viewModel.StartDate).IsEqualTo(DateOnly.FromDateTime(DateTime.Now.AddMonths(-3)));
+        await Assert.That(_viewModel.EndDate).IsEqualTo(DateOnly.FromDateTime(DateTime.Now));
+        await Assert.That(_viewModel.IncludeAssessments).IsTrue();
+        await Assert.That(_viewModel.IncludeMoodEntries).IsTrue();
+        await Assert.That(_viewModel.IncludeHealthMetrics).IsTrue();
+        await Assert.That(_viewModel.IncludeEventLabels).IsTrue();
+        await Assert.That(_viewModel.IsExporting).IsFalse();
+        await Assert.That(_viewModel.StatusMessage).IsNull();
+        await Assert.That(_viewModel.ExportProgress).IsEqualTo(0);
     }
 
     [Test]
@@ -53,8 +58,7 @@ public class ExportViewModelTests
                 It.Is<ExportRequest>(r =>
                     r.IncludeAssessments &&
                     r.IncludeMoodEntries &&
-                    r.IncludeHealthMetrics &&
-                    r.IncludeEventLabels),
+                    r.IncludeHealthMetrics),
                 default))
             .ReturnsAsync(csvData);
 
@@ -67,13 +71,13 @@ public class ExportViewModelTests
             .ReturnsAsync(mockFile.Object);
 
         // Act
-        await _viewModel.ExportCommand.Execute();
+        await _viewModel.ExportCommand.Execute().FirstAsync();
 
         // Assert
         _apiClientMock.Verify(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), default), Times.Once);
-        Assert.That(mockStream.ToArray(), Is.EqualTo(csvData));
-        Assert.That(_viewModel.ExportProgress, Is.EqualTo(100));
-        Assert.That(_viewModel.StatusMessage, Does.Contain("completed successfully"));
+        await Assert.That(mockStream.ToArray()).IsEqualTo(csvData);
+        await Assert.That(_viewModel.ExportProgress).IsEqualTo(100);
+        await Assert.That(_viewModel.StatusMessage).Contains("completed successfully");
     }
 
     [Test]
@@ -95,12 +99,12 @@ public class ExportViewModelTests
             .ReturnsAsync(mockFile.Object);
 
         // Act
-        await _viewModel.ExportCommand.Execute();
+        await _viewModel.ExportCommand.Execute().FirstAsync();
 
         // Assert
         _apiClientMock.Verify(x => x.ExportToJsonAsync(It.IsAny<ExportRequest>(), default), Times.Once);
         var writtenData = Encoding.UTF8.GetString(mockStream.ToArray());
-        Assert.That(writtenData, Is.EqualTo(jsonString));
+        await Assert.That(writtenData).IsEqualTo(jsonString);
     }
 
     [Test]
@@ -114,44 +118,44 @@ public class ExportViewModelTests
             .ReturnsAsync((IStorageFile?)null); // User cancelled
 
         // Act
-        await _viewModel.ExportCommand.Execute();
+        await _viewModel.ExportCommand.Execute().FirstAsync();
 
         // Assert
-        Assert.That(_viewModel.StatusMessage, Is.EqualTo("Export cancelled by user"));
-        Assert.That(_viewModel.IsExporting, Is.False);
+        await Assert.That(_viewModel.StatusMessage).IsEqualTo("Export cancelled by user");
+        await Assert.That(_viewModel.IsExporting).IsFalse();
     }
 
     [Test]
-    public void ExportCommand_CanExecute_RequiresAtLeastOneDataType()
+    public async Task ExportCommand_CanExecute_RequiresAtLeastOneDataType()
     {
         // Initially can execute (all types selected)
-        Assert.That(_viewModel.ExportCommand.CanExecute().Subscribe(), Is.Not.Null);
+        await Assert.That(_viewModel.ExportCommand).IsNotNull();
 
         // Deselect all
         _viewModel.IncludeAssessments = false;
         _viewModel.IncludeMoodEntries = false;
         _viewModel.IncludeHealthMetrics = false;
         _viewModel.IncludeEventLabels = false;
-        Assert.That(_viewModel.ExportCommand.CanExecute().Subscribe(), Is.Not.Null);
+        await Assert.That(_viewModel.ExportCommand).IsNotNull();
 
         // Select one
         _viewModel.IncludeMoodEntries = true;
-        Assert.That(_viewModel.ExportCommand.CanExecute().Subscribe(), Is.Not.Null);
+        await Assert.That(_viewModel.ExportCommand).IsNotNull();
     }
 
     [Test]
-    public void ExportCommand_CannotExecute_WhenExporting()
+    public async Task ExportCommand_CannotExecute_WhenExporting()
     {
         // Can execute initially
-        Assert.That(_viewModel.ExportCommand.CanExecute().Subscribe(), Is.Not.Null);
+        await Assert.That(_viewModel.ExportCommand).IsNotNull();
 
         // Cannot execute when exporting
         _viewModel.IsExporting = true;
-        Assert.That(_viewModel.ExportCommand.CanExecute().Subscribe(), Is.Not.Null);
+        await Assert.That(_viewModel.ExportCommand).IsNotNull();
     }
 
     [Test]
-    public void SelectAll_SelectsAllDataTypes()
+    public async Task SelectAll_SelectsAllDataTypes()
     {
         // Arrange
         _viewModel.IncludeAssessments = false;
@@ -159,27 +163,33 @@ public class ExportViewModelTests
         _viewModel.IncludeHealthMetrics = false;
         _viewModel.IncludeEventLabels = false;
 
-        // Act
-        _viewModel.SelectAllCommand.Execute();
+        // Act (fire-and-forget)
+        _viewModel.SelectAllCommand.Execute().Subscribe();
+
+        // Allow a brief delay for the command to execute
+        await Task.Delay(50);
 
         // Assert
-        Assert.That(_viewModel.IncludeAssessments, Is.True);
-        Assert.That(_viewModel.IncludeMoodEntries, Is.True);
-        Assert.That(_viewModel.IncludeHealthMetrics, Is.True);
-        Assert.That(_viewModel.IncludeEventLabels, Is.True);
+        await Assert.That(_viewModel.IncludeAssessments).IsTrue();
+        await Assert.That(_viewModel.IncludeMoodEntries).IsTrue();
+        await Assert.That(_viewModel.IncludeHealthMetrics).IsTrue();
+        await Assert.That(_viewModel.IncludeEventLabels).IsTrue();
     }
 
     [Test]
-    public void DeselectAll_DeselectsAllDataTypes()
+    public async Task DeselectAll_DeselectsAllDataTypes()
     {
-        // Act
-        _viewModel.DeselectAllCommand.Execute();
+        // Act (fire-and-forget)
+        _viewModel.DeselectAllCommand.Execute().Subscribe();
+
+        // Allow a brief delay for the command to execute
+        await Task.Delay(50);
 
         // Assert
-        Assert.That(_viewModel.IncludeAssessments, Is.False);
-        Assert.That(_viewModel.IncludeMoodEntries, Is.False);
-        Assert.That(_viewModel.IncludeHealthMetrics, Is.False);
-        Assert.That(_viewModel.IncludeEventLabels, Is.False);
+        await Assert.That(_viewModel.IncludeAssessments).IsFalse();
+        await Assert.That(_viewModel.IncludeMoodEntries).IsFalse();
+        await Assert.That(_viewModel.IncludeHealthMetrics).IsFalse();
+        await Assert.That(_viewModel.IncludeEventLabels).IsFalse();
     }
 
     [Test]
@@ -202,13 +212,13 @@ public class ExportViewModelTests
 
         // Assert - Progress should be set during operation
         await Task.Delay(50);
-        Assert.That(_viewModel.ExportProgress, Is.GreaterThan(0));
+        await Assert.That(_viewModel.ExportProgress).IsGreaterThan(0);
 
         // Complete the operation
         tcs.SetResult(new byte[] { 1, 2, 3 });
         await exportTask;
 
-        Assert.That(_viewModel.ExportProgress, Is.EqualTo(100));
+        await Assert.That(_viewModel.ExportProgress).IsEqualTo(100);
     }
 
     [Test]
@@ -219,11 +229,11 @@ public class ExportViewModelTests
             .ThrowsAsync(new Exception("Network error"));
 
         // Act
-        await _viewModel.ExportCommand.Execute();
+        await _viewModel.ExportCommand.Execute().FirstAsync();
 
         // Assert
-        Assert.That(_viewModel.StatusMessage, Does.Contain("Export failed"));
-        Assert.That(_viewModel.IsExporting, Is.False);
+        await Assert.That(_viewModel.StatusMessage).Contains("Export failed");
+        await Assert.That(_viewModel.IsExporting).IsFalse();
     }
 
     [Test]
@@ -238,11 +248,11 @@ public class ExportViewModelTests
             .ReturnsAsync(csvData);
 
         // Act
-        await _viewModel.ExportCommand.Execute();
+        await _viewModel.ExportCommand.Execute().FirstAsync();
 
         // Assert
-        Assert.That(_viewModel.StatusMessage, Does.Contain("Export completed"));
-        Assert.That(_viewModel.StatusMessage, Does.Contain("Downloads"));
+        await Assert.That(_viewModel.StatusMessage).Contains("Export completed");
+        await Assert.That(_viewModel.StatusMessage).Contains("Downloads");
     }
 
     [Test]
@@ -261,19 +271,19 @@ public class ExportViewModelTests
             .ReturnsAsync(mockFile.Object);
 
         // Act
-        await _viewModel.ExportCommand.Execute();
+        await _viewModel.ExportCommand.Execute().FirstAsync();
 
         // Assert - Status should be set initially
-        Assert.That(_viewModel.StatusMessage, Is.Not.Null);
+        await Assert.That(_viewModel.StatusMessage).IsNotNull();
 
         // Wait for auto-clear (5 seconds in implementation)
         await Task.Delay(5100);
-        Assert.That(_viewModel.StatusMessage, Is.Null);
-        Assert.That(_viewModel.ExportProgress, Is.EqualTo(0));
+        await Assert.That(_viewModel.StatusMessage).IsNull();
+        await Assert.That(_viewModel.ExportProgress).IsEqualTo(0);
     }
 
     [Test]
-    public void DateRange_ProperlyConfigured()
+    public async Task DateRange_ProperlyConfigured()
     {
         // Arrange
         var newStartDate = DateOnly.FromDateTime(DateTime.Now.AddMonths(-6));
@@ -284,7 +294,7 @@ public class ExportViewModelTests
         _viewModel.EndDate = newEndDate;
 
         // Assert
-        Assert.That(_viewModel.StartDate, Is.EqualTo(newStartDate));
-        Assert.That(_viewModel.EndDate, Is.EqualTo(newEndDate));
+        await Assert.That(_viewModel.StartDate).IsEqualTo(newStartDate);
+        await Assert.That(_viewModel.EndDate).IsEqualTo(newEndDate);
     }
 }

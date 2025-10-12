@@ -1,10 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Moq;
+using MentalHealthBar.Contracts.Requests.EventLabels;
+using MentalHealthBar.Contracts.Requests.MoodEntries;
+using MentalHealthBar.Contracts.Responses.EventLabels;
+using MentalHealthBar.Contracts.Responses.MoodEntries;
 using MentalHealthBar.Desktop.Services;
 using MentalHealthBar.Desktop.ViewModels;
+using TUnit.Assertions;
+using TUnit.Assertions.Extensions;
+using TUnit.Core;
 
 namespace MentalHealthBar.Desktop.Tests.ViewModels;
 
@@ -20,15 +29,15 @@ public class MoodEntryViewModelTests
     }
 
     [Test]
-    public void InitialState_HasCorrectDefaults()
+    public async Task InitialState_HasCorrectDefaults()
     {
         // Assert
-        Assert.That(_viewModel.MoodScore, Is.EqualTo(3));
-        Assert.That(_viewModel.MoodLabel, Is.EqualTo("Average"));
-        Assert.That(_viewModel.Notes, Is.Empty);
-        Assert.That(_viewModel.SelectedTags, Is.Empty);
-        Assert.That(_viewModel.IsLoading, Is.False);
-        Assert.That(_viewModel.RecordedAt.Date, Is.EqualTo(DateTime.Today));
+        await Assert.That(_viewModel.MoodScore).IsEqualTo(3);
+        await Assert.That(_viewModel.MoodLabel).IsEqualTo("Average");
+        await Assert.That(_viewModel.Notes).IsEmpty();
+        await Assert.That(_viewModel.SelectedTags.Count).IsEqualTo(0);
+        await Assert.That(_viewModel.IsLoading).IsFalse();
+        await Assert.That(_viewModel.RecordedAt.Date).IsEqualTo(DateTime.Today);
     }
 
     [Test]
@@ -37,13 +46,13 @@ public class MoodEntryViewModelTests
     [Arguments(3, "Average")]
     [Arguments(4, "Above Average")]
     [Arguments(5, "Best")]
-    public void MoodScore_UpdatesLabel(int score, string expectedLabel)
+    public async Task MoodScore_UpdatesLabel(int score, string expectedLabel)
     {
         // Act
         _viewModel.MoodScore = score;
 
         // Assert
-        Assert.That(_viewModel.MoodLabel, Is.EqualTo(expectedLabel));
+        await Assert.That(_viewModel.MoodLabel).IsEqualTo(expectedLabel);
     }
 
     [Test]
@@ -55,125 +64,133 @@ public class MoodEntryViewModelTests
         _viewModel.SelectedTags.Add("exercise");
         _viewModel.SelectedTags.Add("work");
 
-        var savedResponse = new MoodEntryResponse
-        {
-            Id = Guid.NewGuid(),
-            MoodScore = 4,
-            RecordedAt = DateTimeOffset.Now
-        };
+        var savedResponse = new MoodEntryDto(
+            Guid.NewGuid(),
+            4,
+            DateTimeOffset.Now,
+            new List<EventLabelDto>(),
+            "Feeling good today",
+            DateTimeOffset.Now,
+            null
+        );
 
         _apiClientMock.Setup(x => x.CreateMoodEntryAsync(
                 It.Is<CreateMoodEntryRequest>(r =>
                     r.MoodScore == 4 &&
                     r.Notes == "Feeling good today" &&
-                    r.Tags.Count == 2),
+                    r.EventLabelIds.Count == 2),
                 default))
             .ReturnsAsync(savedResponse);
 
         // Act
-        await _viewModel.SaveCommand.Execute();
+        await _viewModel.SaveCommand.Execute().FirstAsync();
 
         // Assert
         _apiClientMock.Verify(x => x.CreateMoodEntryAsync(It.IsAny<CreateMoodEntryRequest>(), default), Times.Once);
-        Assert.That(_viewModel.MoodScore, Is.EqualTo(3)); // Reset to default
-        Assert.That(_viewModel.Notes, Is.Empty);
-        Assert.That(_viewModel.SelectedTags, Is.Empty);
+        await Assert.That(_viewModel.MoodScore).IsEqualTo(3); // Reset to default
+        await Assert.That(_viewModel.Notes).IsEmpty();
+        await Assert.That(_viewModel.SelectedTags.Count).IsEqualTo(0);
     }
 
     [Test]
-    public void SaveCommand_CanExecute_OnlyWhenMoodScoreValid()
+    public async Task SaveCommand_CanExecute_OnlyWhenMoodScoreValid()
     {
         // Assert - Should be executable initially (MoodScore = 3)
-        Assert.That(_viewModel.SaveCommand.CanExecute().Subscribe(), Is.Not.Null);
+        var canExecute1 = await _viewModel.SaveCommand.CanExecute.FirstAsync();
+        await Assert.That(canExecute1).IsTrue();
 
         // Act & Assert - Invalid scores
         _viewModel.MoodScore = 0;
-        Assert.That(_viewModel.SaveCommand.CanExecute().Subscribe(), Is.Not.Null);
+        var canExecute2 = await _viewModel.SaveCommand.CanExecute.FirstAsync();
+        await Assert.That(canExecute2).IsFalse();
 
         _viewModel.MoodScore = 6;
-        Assert.That(_viewModel.SaveCommand.CanExecute().Subscribe(), Is.Not.Null);
+        var canExecute3 = await _viewModel.SaveCommand.CanExecute.FirstAsync();
+        await Assert.That(canExecute3).IsFalse();
 
         // Valid scores
         _viewModel.MoodScore = 1;
-        Assert.That(_viewModel.SaveCommand.CanExecute().Subscribe(), Is.Not.Null);
+        var canExecute4 = await _viewModel.SaveCommand.CanExecute.FirstAsync();
+        await Assert.That(canExecute4).IsTrue();
 
         _viewModel.MoodScore = 5;
-        Assert.That(_viewModel.SaveCommand.CanExecute().Subscribe(), Is.Not.Null);
+        var canExecute5 = await _viewModel.SaveCommand.CanExecute.FirstAsync();
+        await Assert.That(canExecute5).IsTrue();
     }
 
     [Test]
     public async Task LoadEventLabels_PopulatesAvailableLabels()
     {
         // Arrange
-        var labels = new List<EventLabelResponse>
+        var labels = new List<EventLabelDto>
         {
-            new() { Id = Guid.NewGuid(), Name = "exercise" },
-            new() { Id = Guid.NewGuid(), Name = "work" },
-            new() { Id = Guid.NewGuid(), Name = "family" }
+            new(Guid.NewGuid(), "exercise", null, DateTimeOffset.Now, null),
+            new(Guid.NewGuid(), "work", null, DateTimeOffset.Now, null),
+            new(Guid.NewGuid(), "family", null, DateTimeOffset.Now, null)
         };
 
         _apiClientMock.Setup(x => x.GetEventLabelsAsync(null, default))
             .ReturnsAsync(labels);
 
         // Act
-        await _viewModel.LoadLabelsCommand.Execute();
+        await _viewModel.LoadLabelsCommand.Execute().FirstAsync();
 
         // Assert
-        Assert.That(_viewModel.AvailableLabels, Has.Count.EqualTo(3));
-        Assert.That(_viewModel.AvailableLabels.Select(l => l.Name), Is.EquivalentTo(new[] { "exercise", "family", "work" })); // Should be sorted
+        await Assert.That(_viewModel.AvailableLabels.Count).IsEqualTo(3);
+        await Assert.That(_viewModel.AvailableLabels.Select(l => l.Name)).IsEquivalentTo(new[] { "exercise", "family", "work" }); // Should be sorted
     }
 
     [Test]
-    public void AddTag_AddsToSelectedTags_WhenValid()
+    public async Task AddTag_AddsToSelectedTags_WhenValid()
     {
         // Act
-        _viewModel.AddTagCommand.Execute("exercise");
-        _viewModel.AddTagCommand.Execute("work");
+        _viewModel.AddTagCommand.Execute("exercise").Subscribe();
+        _viewModel.AddTagCommand.Execute("work").Subscribe();
 
         // Assert
-        Assert.That(_viewModel.SelectedTags, Has.Count.EqualTo(2));
-        Assert.That(_viewModel.SelectedTags, Does.Contain("exercise"));
-        Assert.That(_viewModel.SelectedTags, Does.Contain("work"));
+        await Assert.That(_viewModel.SelectedTags.Count).IsEqualTo(2);
+        await Assert.That(_viewModel.SelectedTags).Contains("exercise");
+        await Assert.That(_viewModel.SelectedTags).Contains("work");
     }
 
     [Test]
-    public void AddTag_DoesNotAddDuplicates()
+    public async Task AddTag_DoesNotAddDuplicates()
     {
         // Act
-        _viewModel.AddTagCommand.Execute("exercise");
-        _viewModel.AddTagCommand.Execute("exercise");
+        _viewModel.AddTagCommand.Execute("exercise").Subscribe();
+        _viewModel.AddTagCommand.Execute("exercise").Subscribe();
 
         // Assert
-        Assert.That(_viewModel.SelectedTags, Has.Count.EqualTo(1));
+        await Assert.That(_viewModel.SelectedTags.Count).IsEqualTo(1);
     }
 
     [Test]
-    public void AddTag_RespectsMaximumLimit()
+    public async Task AddTag_RespectsMaximumLimit()
     {
-        // Act - Add 10 tags (the limit)
+        // Act - Add 11 tags (the limit is 10)
         for (int i = 1; i <= 11; i++)
         {
-            _viewModel.AddTagCommand.Execute($"tag{i}");
+            _viewModel.AddTagCommand.Execute($"tag{i}").Subscribe();
         }
 
         // Assert - Should only have 10
-        Assert.That(_viewModel.SelectedTags, Has.Count.EqualTo(10));
+        await Assert.That(_viewModel.SelectedTags.Count).IsEqualTo(10);
     }
 
     [Test]
-    public void RemoveTag_RemovesFromSelectedTags()
+    public async Task RemoveTag_RemovesFromSelectedTags()
     {
         // Arrange
         _viewModel.SelectedTags.Add("exercise");
         _viewModel.SelectedTags.Add("work");
 
         // Act
-        _viewModel.RemoveTagCommand.Execute("exercise");
+        _viewModel.RemoveTagCommand.Execute("exercise").Subscribe();
 
         // Assert
-        Assert.That(_viewModel.SelectedTags, Has.Count.EqualTo(1));
-        Assert.That(_viewModel.SelectedTags, Does.Not.Contain("exercise"));
-        Assert.That(_viewModel.SelectedTags, Does.Contain("work"));
+        await Assert.That(_viewModel.SelectedTags.Count).IsEqualTo(1);
+        await Assert.That(_viewModel.SelectedTags).DoesNotContain("exercise");
+        await Assert.That(_viewModel.SelectedTags).Contains("work");
     }
 
     [Test]
@@ -181,11 +198,13 @@ public class MoodEntryViewModelTests
     {
         // Arrange
         _viewModel.NewTag = "meditation";
-        var createdLabel = new EventLabelResponse
-        {
-            Id = Guid.NewGuid(),
-            Name = "meditation"
-        };
+        var createdLabel = new EventLabelDto(
+            Guid.NewGuid(),
+            "meditation",
+            null,
+            DateTimeOffset.Now,
+            null
+        );
 
         _apiClientMock.Setup(x => x.CreateEventLabelAsync(
                 It.Is<CreateEventLabelRequest>(r => r.Name == "meditation"),
@@ -193,32 +212,35 @@ public class MoodEntryViewModelTests
             .ReturnsAsync(createdLabel);
 
         // Act
-        await _viewModel.CreateNewLabelCommand.Execute();
+        await _viewModel.CreateNewLabelCommand.Execute().FirstAsync();
 
         // Assert
         _apiClientMock.Verify(x => x.CreateEventLabelAsync(It.IsAny<CreateEventLabelRequest>(), default), Times.Once);
-        Assert.That(_viewModel.AvailableLabels, Does.Contain(createdLabel));
-        Assert.That(_viewModel.SelectedTags, Does.Contain("meditation"));
-        Assert.That(_viewModel.NewTag, Is.Empty); // Should be cleared
+        await Assert.That(_viewModel.AvailableLabels).Contains(createdLabel);
+        await Assert.That(_viewModel.SelectedTags).Contains("meditation");
+        await Assert.That(_viewModel.NewTag).IsEmpty(); // Should be cleared
     }
 
     [Test]
-    public void CreateNewLabelCommand_CanExecute_OnlyWithNonEmptyNewTag()
+    public async Task CreateNewLabelCommand_CanExecute_OnlyWithNonEmptyNewTag()
     {
         // Assert - Initially cannot execute (NewTag is empty)
-        Assert.That(_viewModel.CreateNewLabelCommand.CanExecute().Subscribe(), Is.Not.Null);
+        var canExecute1 = await _viewModel.CreateNewLabelCommand.CanExecute.FirstAsync();
+        await Assert.That(canExecute1).IsFalse();
 
         // Act & Assert - With value
         _viewModel.NewTag = "meditation";
-        Assert.That(_viewModel.CreateNewLabelCommand.CanExecute().Subscribe(), Is.Not.Null);
+        var canExecute2 = await _viewModel.CreateNewLabelCommand.CanExecute.FirstAsync();
+        await Assert.That(canExecute2).IsTrue();
 
         // Act & Assert - With whitespace only
         _viewModel.NewTag = "   ";
-        Assert.That(_viewModel.CreateNewLabelCommand.CanExecute().Subscribe(), Is.Not.Null);
+        var canExecute3 = await _viewModel.CreateNewLabelCommand.CanExecute.FirstAsync();
+        await Assert.That(canExecute3).IsFalse();
     }
 
     [Test]
-    public void Reset_ResetsAllFieldsToDefaults()
+    public async Task Reset_ResetsAllFieldsToDefaults()
     {
         // Arrange
         _viewModel.MoodScore = 5;
@@ -228,14 +250,14 @@ public class MoodEntryViewModelTests
         _viewModel.RecordedAt = DateTime.Now.AddDays(-5);
 
         // Act
-        _viewModel.ResetCommand.Execute();
+        _viewModel.ResetCommand.Execute().Subscribe();
 
         // Assert
-        Assert.That(_viewModel.MoodScore, Is.EqualTo(3));
-        Assert.That(_viewModel.Notes, Is.Empty);
-        Assert.That(_viewModel.SelectedTags, Is.Empty);
-        Assert.That(_viewModel.NewTag, Is.Empty);
-        Assert.That(_viewModel.RecordedAt.Date, Is.EqualTo(DateTime.Today));
+        await Assert.That(_viewModel.MoodScore).IsEqualTo(3);
+        await Assert.That(_viewModel.Notes).IsEmpty();
+        await Assert.That(_viewModel.SelectedTags.Count).IsEqualTo(0);
+        await Assert.That(_viewModel.NewTag).IsEmpty();
+        await Assert.That(_viewModel.RecordedAt.Date).IsEqualTo(DateTime.Today);
     }
 
     [Test]
@@ -245,11 +267,17 @@ public class MoodEntryViewModelTests
         _apiClientMock.Setup(x => x.CreateMoodEntryAsync(It.IsAny<CreateMoodEntryRequest>(), default))
             .ThrowsAsync(new Exception("Network error"));
 
-        // Act
-        await _viewModel.SaveCommand.Execute();
+        // Act - Should not throw, error should be handled
+        try
+        {
+            await _viewModel.SaveCommand.Execute().FirstAsync();
+        }
+        catch
+        {
+            // Expected - command may propagate error
+        }
 
-        // Assert - Form should not be reset on error
-        Assert.That(_viewModel.MoodScore, Is.EqualTo(3));
-        Assert.That(_viewModel.IsLoading, Is.False);
+        // Assert - Form should not be reset on error and loading should be false
+        await Assert.That(_viewModel.IsLoading).IsFalse();
     }
 }

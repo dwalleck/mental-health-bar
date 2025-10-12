@@ -41,14 +41,13 @@ jobs:
       run: dotnet build tests/MentalHealthBar.Api.Tests/MentalHealthBar.Api.Tests.csproj --no-restore --configuration Release
 
     - name: Build Desktop Tests
-      continue-on-error: true
       run: dotnet build tests/MentalHealthBar.Desktop.Tests/MentalHealthBar.Desktop.Tests.csproj --no-restore --configuration Release
 
     - name: Build status
       run: |
         echo "✅ API build succeeded"
         echo "✅ Desktop build succeeded"
-        echo "⚠️  Desktop tests may have compilation errors (expected)"
+        echo "✅ Desktop tests build succeeded"
 
   format-check:
     name: Code Formatting

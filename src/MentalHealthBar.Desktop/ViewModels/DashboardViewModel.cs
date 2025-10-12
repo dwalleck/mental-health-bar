@@ -10,6 +10,9 @@ namespace MentalHealthBar.Desktop.ViewModels;
 
 public class DashboardViewModel : ViewModelBase
 {
+    private const int RecentMoodLookbackDays = 7;
+    private const int RecentAssessmentLookbackDays = 30;
+
     private readonly IApiClient _apiClient;
     private MoodEntryResponse? _recentMood;
     private AssessmentResponse? _lastAssessment;
@@ -68,7 +71,7 @@ public class DashboardViewModel : ViewModelBase
 
             // Load recent mood entry
             var moodHistory = await _apiClient.GetMoodHistoryAsync(
-                startDate: DateTime.Now.AddDays(-7),
+                startDate: DateTime.Now.AddDays(-RecentMoodLookbackDays),
                 endDate: DateTime.Now,
                 pageSize: 1);
 
@@ -86,7 +89,7 @@ public class DashboardViewModel : ViewModelBase
 
             // Load last assessment
             var assessmentHistory = await _apiClient.GetAssessmentHistoryAsync(
-                startDate: DateTime.Now.AddDays(-30),
+                startDate: DateTime.Now.AddDays(-RecentAssessmentLookbackDays),
                 endDate: DateTime.Now,
                 pageSize: 1);
 
@@ -105,7 +108,7 @@ public class DashboardViewModel : ViewModelBase
 
             // Load mood statistics for the week
             var moodStats = await _apiClient.GetMoodStatsAsync(
-                startDate: DateTime.Now.AddDays(-7),
+                startDate: DateTime.Now.AddDays(-RecentMoodLookbackDays),
                 endDate: DateTime.Now);
 
             if (moodStats != null && moodStats.Count > 0)
@@ -116,7 +119,7 @@ public class DashboardViewModel : ViewModelBase
 
             // Load health metrics summary
             var healthMetrics = await _apiClient.GetHealthMetricsHistoryAsync(
-                startDate: DateTime.Now.AddDays(-7),
+                startDate: DateTime.Now.AddDays(-RecentMoodLookbackDays),
                 endDate: DateTime.Now);
 
             if (healthMetrics.Any())

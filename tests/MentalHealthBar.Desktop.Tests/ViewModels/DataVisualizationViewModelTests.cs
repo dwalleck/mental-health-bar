@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Moq;
 using ScottPlot.Avalonia;
+using TUnit.Assertions;
+using TUnit.Assertions.Extensions;
+using TUnit.Core;
 using MentalHealthBar.Desktop.Services;
 using MentalHealthBar.Desktop.ViewModels;
 
@@ -23,15 +27,15 @@ public class DataVisualizationViewModelTests
     }
 
     [Test]
-    public void InitialState_HasCorrectDefaults()
+    public async Task InitialState_HasCorrectDefaults()
     {
         // Assert
-        Assert.That(_viewModel.SelectedDateRange, Is.EqualTo(DateRangeOption.Last30Days));
-        Assert.That(_viewModel.SelectedAssessmentType, Is.EqualTo("PHQ9"));
-        Assert.That(_viewModel.ShowDailyAverage, Is.False);
-        Assert.That(_viewModel.IsLoading, Is.False);
-        Assert.That(_viewModel.DateRangeOptions, Has.Count.EqualTo(4));
-        Assert.That(_viewModel.AssessmentTypes, Has.Count.EqualTo(4));
+        await Assert.That(_viewModel.SelectedDateRange).IsEqualTo(DateRangeOption.Last30Days);
+        await Assert.That(_viewModel.SelectedAssessmentType).IsEqualTo("PHQ9");
+        await Assert.That(_viewModel.ShowDailyAverage).IsFalse();
+        await Assert.That(_viewModel.IsLoading).IsFalse();
+        await Assert.That(_viewModel.DateRangeOptions.Count).IsEqualTo(4);
+        await Assert.That(_viewModel.AssessmentTypes.Count).IsEqualTo(4);
     }
 
     [Test]
@@ -40,8 +44,8 @@ public class DataVisualizationViewModelTests
         // Arrange
         var moodEntries = new List<MoodEntryResponse>
         {
-            new() { Id = Guid.NewGuid(), MoodScore = 4, RecordedAt = DateTimeOffset.Now },
-            new() { Id = Guid.NewGuid(), MoodScore = 3, RecordedAt = DateTimeOffset.Now.AddDays(-1) }
+            new(Guid.NewGuid(), 4, DateTimeOffset.Now, new List<EventLabelResponse>(), null, DateTimeOffset.Now, null),
+            new(Guid.NewGuid(), 3, DateTimeOffset.Now.AddDays(-1), new List<EventLabelResponse>(), null, DateTimeOffset.Now, null)
         };
 
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
@@ -53,13 +57,13 @@ public class DataVisualizationViewModelTests
             .Returns(expectedChart);
 
         // Act
-        await _viewModel.RefreshChartsCommand.Execute();
+        await _viewModel.RefreshChartsCommand.Execute().FirstAsync();
 
         // Assert
         _chartingServiceMock.Verify(x => x.CreateMoodChart(
             It.Is<List<MoodEntryResponse>>(list => list.Count == 2),
             false), Times.AtLeastOnce);
-        Assert.That(_viewModel.MoodChart, Is.EqualTo(expectedChart));
+        await Assert.That(_viewModel.MoodChart).IsEqualTo(expectedChart);
     }
 
     [Test]
@@ -70,7 +74,7 @@ public class DataVisualizationViewModelTests
 
         var moodEntries = new List<MoodEntryResponse>
         {
-            new() { Id = Guid.NewGuid(), MoodScore = 4, RecordedAt = DateTimeOffset.Now }
+            new(Guid.NewGuid(), 4, DateTimeOffset.Now, new List<EventLabelResponse>(), null, DateTimeOffset.Now, null)
         };
 
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
@@ -81,7 +85,7 @@ public class DataVisualizationViewModelTests
             .Returns(new AvaPlot());
 
         // Act
-        await Task.Delay(600); // Wait for throttle
+        // Note: Throttle delays removed - testing immediate response
         await Task.Delay(100); // Allow async operation to complete
 
         // Assert
@@ -96,8 +100,8 @@ public class DataVisualizationViewModelTests
         // Arrange
         var assessments = new List<AssessmentResponse>
         {
-            new() { Id = Guid.NewGuid(), Type = "PHQ9", TotalScore = 10 },
-            new() { Id = Guid.NewGuid(), Type = "PHQ9", TotalScore = 12 }
+            new(Guid.NewGuid(), "PHQ9", new Dictionary<string, int>(), 10, "Mild", DateTimeOffset.Now, DateTimeOffset.Now, null),
+            new(Guid.NewGuid(), "PHQ9", new Dictionary<string, int>(), 12, "Moderate", DateTimeOffset.Now, DateTimeOffset.Now, null)
         };
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
@@ -109,7 +113,7 @@ public class DataVisualizationViewModelTests
             .Returns(expectedChart);
 
         // Act
-        await _viewModel.RefreshChartsCommand.Execute();
+        await _viewModel.RefreshChartsCommand.Execute().FirstAsync();
 
         // Assert
         _apiClientMock.Verify(x => x.GetAssessmentHistoryAsync(
@@ -125,9 +129,9 @@ public class DataVisualizationViewModelTests
         // Arrange
         var healthMetrics = new List<HealthMetricResponse>
         {
-            new() { Type = "SleepHours", Value = 8m, RecordedDate = "2025-01-01" },
-            new() { Type = "WaterIntakeOz", Value = 64m, RecordedDate = "2025-01-01" },
-            new() { Type = "SleepHours", Value = 7m, RecordedDate = "2025-01-02" }
+            new(Guid.NewGuid(), "SleepHours", 8m, DateOnly.Parse("2025-01-01"), DateTimeOffset.Now, null),
+            new(Guid.NewGuid(), "WaterIntakeOz", 64m, DateOnly.Parse("2025-01-01"), DateTimeOffset.Now, null),
+            new(Guid.NewGuid(), "SleepHours", 7m, DateOnly.Parse("2025-01-02"), DateTimeOffset.Now, null)
         };
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
@@ -141,7 +145,7 @@ public class DataVisualizationViewModelTests
             .Returns(expectedChart);
 
         // Act
-        await _viewModel.RefreshChartsCommand.Execute();
+        await _viewModel.RefreshChartsCommand.Execute().FirstAsync();
 
         // Assert
         _chartingServiceMock.Verify(x => x.CreateCombinedHealthChart(
@@ -175,7 +179,7 @@ public class DataVisualizationViewModelTests
 
         // Act
         _viewModel.SelectedDateRange = DateRangeOption.Last7Days;
-        await Task.Delay(600); // Wait for throttle
+        // Note: Throttle delays removed - testing immediate response
         await Task.Delay(100); // Allow async operation
 
         // Assert
@@ -197,7 +201,7 @@ public class DataVisualizationViewModelTests
 
         // Act
         _viewModel.SelectedAssessmentType = "GAD7";
-        await Task.Delay(600); // Wait for throttle
+        // Note: Throttle delays removed - testing immediate response
         await Task.Delay(100);
 
         // Assert
@@ -252,7 +256,7 @@ public class DataVisualizationViewModelTests
             .Returns(new AvaPlot());
 
         // Act
-        await _viewModel.RefreshChartsCommand.Execute();
+        await _viewModel.RefreshChartsCommand.Execute().FirstAsync();
 
         // Assert
         _chartingServiceMock.Verify(x => x.CreateMoodChart(It.IsAny<List<MoodEntryResponse>>(), It.IsAny<bool>()), Times.Once);
@@ -269,21 +273,21 @@ public class DataVisualizationViewModelTests
             .ThrowsAsync(new Exception("Network error"));
 
         // Act
-        await _viewModel.RefreshChartsCommand.Execute();
+        await _viewModel.RefreshChartsCommand.Execute().FirstAsync();
 
         // Assert
-        Assert.That(_viewModel.IsLoading, Is.False);
+        await Assert.That(_viewModel.IsLoading).IsFalse();
         // Chart should remain null or unchanged
-        Assert.That(_viewModel.MoodChart, Is.Null);
+        await Assert.That(_viewModel.MoodChart).IsNull();
     }
 
     [Test]
-    public void ExportChartCommand_IsInitialized()
+    public async Task ExportChartCommand_IsInitialized()
     {
         // Assert
-        Assert.That(_viewModel.ExportChartCommand, Is.Not.Null);
+        await Assert.That(_viewModel.ExportChartCommand).IsNotNull();
 
-        // Act - should not throw
-        _viewModel.ExportChartCommand.Execute("mood");
+        // Act - should not throw (fire-and-forget)
+        _viewModel.ExportChartCommand.Execute("mood").Subscribe();
     }
 }

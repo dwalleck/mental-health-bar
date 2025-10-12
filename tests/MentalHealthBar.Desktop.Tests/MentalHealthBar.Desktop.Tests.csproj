@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\MentalHealthBar.Desktop\MentalHealthBar.Desktop.csproj" />
+    <ProjectReference Include="..\..\src\MentalHealthBar.Contracts\MentalHealthBar.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

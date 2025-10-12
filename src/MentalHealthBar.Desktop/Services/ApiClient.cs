@@ -67,7 +67,8 @@ public class ApiClient : IApiClient
     {
         _httpClient = httpClient;
         _httpClient.BaseAddress = new Uri("https://localhost:5001/api/");
-        _httpClient.Timeout = TimeSpan.FromSeconds(5);
+        // Increased timeout to 30s to accommodate export operations with large datasets and slow network conditions
+        _httpClient.Timeout = TimeSpan.FromSeconds(30);
 
         // Configure retry policy with exponential backoff
         _retryPolicy = HttpPolicyExtensions
