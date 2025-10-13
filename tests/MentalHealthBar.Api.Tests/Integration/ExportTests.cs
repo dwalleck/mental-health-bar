@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using MentalHealthBar.Contracts.Responses.EventLabels;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -39,15 +40,16 @@ public class ExportTests : IDisposable
         // Expected: CSV file with assessments, mood entries, and health metrics
 
         // Arrange: Create event label and sample data
+        var now = SystemClock.Instance.GetCurrentInstant();
         var workId = await CreateEventLabel("work");
-        await CreateAssessment("PHQ9", 7, DateTimeOffset.UtcNow.AddDays(-7));
-        await CreateMoodEntry(3, DateTimeOffset.UtcNow.AddDays(-5), new List<Guid> { workId });
+        await CreateAssessment("PHQ9", 7, now.Minus(Duration.FromDays(7)));
+        await CreateMoodEntry(3, now.Minus(Duration.FromDays(5)), new List<Guid> { workId });
         await RecordHealthMetric("SleepHours", 7.0m, DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-3)));
 
         // Arrange: Export request
         var request = new ExportRequest(
-            StartDate: DateTimeOffset.UtcNow.AddDays(-30),
-            EndDate: DateTimeOffset.UtcNow,
+            StartDate: now.Minus(Duration.FromDays(30)).ToDateTimeOffset(),
+            EndDate: now.ToDateTimeOffset(),
             IncludeAssessments: true,
             IncludeMoodEntries: true,
             IncludeHealthMetrics: true
@@ -85,15 +87,16 @@ public class ExportTests : IDisposable
         // Expected: Structured JSON with separate sections for each data type
 
         // Arrange: Create event label and sample data
+        var now = SystemClock.Instance.GetCurrentInstant();
         var exerciseId = await CreateEventLabel("exercise");
-        await CreateAssessment("GAD7", 8, DateTimeOffset.UtcNow.AddDays(-5));
-        await CreateMoodEntry(4, DateTimeOffset.UtcNow.AddDays(-2), new List<Guid> { exerciseId });
+        await CreateAssessment("GAD7", 8, now.Minus(Duration.FromDays(5)));
+        await CreateMoodEntry(4, now.Minus(Duration.FromDays(2)), new List<Guid> { exerciseId });
         await RecordHealthMetric("WaterIntakeOz", 64.0m, DateOnly.FromDateTime(DateTime.UtcNow));
 
         // Arrange: Export request
         var request = new ExportRequest(
-            StartDate: DateTimeOffset.UtcNow.AddDays(-30),
-            EndDate: DateTimeOffset.UtcNow,
+            StartDate: now.Minus(Duration.FromDays(30)).ToDateTimeOffset(),
+            EndDate: now.ToDateTimeOffset(),
             IncludeAssessments: true,
             IncludeMoodEntries: true,
             IncludeHealthMetrics: true
@@ -129,14 +132,15 @@ public class ExportTests : IDisposable
         // Expected: Only recent data included
 
         // Arrange: Create data at different times
-        await CreateMoodEntry(3, DateTimeOffset.UtcNow.AddDays(-30), new List<Guid>()); // Outside range
-        await CreateMoodEntry(4, DateTimeOffset.UtcNow.AddDays(-5), new List<Guid>());  // Inside range
-        await CreateMoodEntry(3, DateTimeOffset.UtcNow, new List<Guid>());              // Inside range
+        var now = SystemClock.Instance.GetCurrentInstant();
+        await CreateMoodEntry(3, now.Minus(Duration.FromDays(30)), new List<Guid>()); // Outside range
+        await CreateMoodEntry(4, now.Minus(Duration.FromDays(5)), new List<Guid>());  // Inside range
+        await CreateMoodEntry(3, now, new List<Guid>());              // Inside range
 
         // Arrange: Export request for last 7 days only
         var request = new ExportRequest(
-            StartDate: DateTimeOffset.UtcNow.AddDays(-7),
-            EndDate: DateTimeOffset.UtcNow,
+            StartDate: now.Minus(Duration.FromDays(7)).ToDateTimeOffset(),
+            EndDate: now.ToDateTimeOffset(),
             IncludeAssessments: true,
             IncludeMoodEntries: true,
             IncludeHealthMetrics: true
@@ -151,10 +155,11 @@ public class ExportTests : IDisposable
         await Assert.That(exportData).IsNotNull();
 
         // Verify all mood entries are within date range
+        var sevenDaysAgo = now.Minus(Duration.FromDays(7));
         foreach (var entry in exportData!.MoodEntries)
         {
-            await Assert.That(entry.RecordedAt).IsGreaterThan(DateTimeOffset.UtcNow.AddDays(-7));
-            await Assert.That(entry.RecordedAt).IsLessThanOrEqualTo(DateTimeOffset.UtcNow);
+            await Assert.That(entry.RecordedAt > sevenDaysAgo).IsTrue();
+            await Assert.That(entry.RecordedAt <= now).IsTrue();
         }
     }
 
@@ -165,15 +170,16 @@ public class ExportTests : IDisposable
         // Expected: Only mood entries in export
 
         // Arrange: Create event label and all data types
+        var now = SystemClock.Instance.GetCurrentInstant();
         var testId = await CreateEventLabel("test");
-        await CreateAssessment("PHQ9", 5, DateTimeOffset.UtcNow.AddDays(-5));
-        await CreateMoodEntry(3, DateTimeOffset.UtcNow.AddDays(-2), new List<Guid> { testId });
+        await CreateAssessment("PHQ9", 5, now.Minus(Duration.FromDays(5)));
+        await CreateMoodEntry(3, now.Minus(Duration.FromDays(2)), new List<Guid> { testId });
         await RecordHealthMetric("SleepHours", 7.0m, DateOnly.FromDateTime(DateTime.UtcNow));
 
         // Arrange: Export only mood entries
         var request = new ExportRequest(
-            StartDate: DateTimeOffset.UtcNow.AddDays(-30),
-            EndDate: DateTimeOffset.UtcNow,
+            StartDate: now.Minus(Duration.FromDays(30)).ToDateTimeOffset(),
+            EndDate: now.ToDateTimeOffset(),
             IncludeAssessments: false,      // Exclude
             IncludeMoodEntries: true,       // Include
             IncludeHealthMetrics: false     // Exclude
@@ -198,9 +204,10 @@ public class ExportTests : IDisposable
         // Expected: Export succeeds with empty collections (not error)
 
         // Arrange: Export request (no data created)
+        var now = SystemClock.Instance.GetCurrentInstant();
         var request = new ExportRequest(
-            StartDate: DateTimeOffset.UtcNow.AddDays(-30),
-            EndDate: DateTimeOffset.UtcNow,
+            StartDate: now.Minus(Duration.FromDays(30)).ToDateTimeOffset(),
+            EndDate: now.ToDateTimeOffset(),
             IncludeAssessments: true,
             IncludeMoodEntries: true,
             IncludeHealthMetrics: true
@@ -222,7 +229,7 @@ public class ExportTests : IDisposable
     }
 
     // Helper methods
-    private async Task<Guid> CreateMoodEntry(int score, DateTimeOffset recordedAt, List<Guid> eventLabelIds)
+    private async Task<Guid> CreateMoodEntry(int score, Instant recordedAt, List<Guid> eventLabelIds)
     {
         var request = new { MoodScore = score, RecordedAt = recordedAt, EventLabelIds = eventLabelIds, Notes = (string?)null };
         var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
@@ -272,7 +279,7 @@ public class ExportTests : IDisposable
         return result!.Id;
     }
 
-    private async Task<Guid> CreateAssessment(string type, int targetScore, DateTimeOffset completedAt)
+    private async Task<Guid> CreateAssessment(string type, int targetScore, Instant completedAt)
     {
         var questionCount = type switch { "PHQ9" => 9, "GAD7" => 7, _ => 9 };
         var responses = new Dictionary<string, int>();
@@ -313,11 +320,11 @@ public class ExportTests : IDisposable
         List<HealthMetricExportDto> HealthMetrics
     );
 
-    private record AssessmentExportDto(Guid Id, string Type, DateTimeOffset CompletedAt, int TotalScore, string Severity);
-    private record MoodEntryExportDto(Guid Id, int MoodScore, DateTimeOffset RecordedAt, List<EventLabelDto> EventLabels, string? Notes);
+    private record AssessmentExportDto(Guid Id, string Type, Instant CompletedAt, int TotalScore, string Severity);
+    private record MoodEntryExportDto(Guid Id, int MoodScore, Instant RecordedAt, List<EventLabelDto> EventLabels, string? Notes);
     private record HealthMetricExportDto(Guid Id, string Type, decimal Value, DateOnly RecordedDate);
 
-    private record MoodEntryDto(Guid Id, int MoodScore, DateTimeOffset RecordedAt);
+    private record MoodEntryDto(Guid Id, int MoodScore, Instant RecordedAt);
     private record AssessmentResultDto(Guid Id, string Type, int TotalScore, string Severity);
     private record HealthMetricDto(Guid Id, string Type, decimal Value, DateOnly RecordedDate);
 }

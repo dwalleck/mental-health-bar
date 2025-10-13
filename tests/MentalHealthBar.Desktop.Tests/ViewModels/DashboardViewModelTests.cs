@@ -4,6 +4,11 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Moq;
+using NodaTime;
+using MentalHealthBar.Contracts.Responses.Assessments;
+using MentalHealthBar.Contracts.Responses.EventLabels;
+using MentalHealthBar.Contracts.Responses.HealthMetrics;
+using MentalHealthBar.Contracts.Responses.MoodEntries;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -27,31 +32,36 @@ public class DashboardViewModelTests
     public async Task LoadDashboardData_WithRecentMood_PopulatesRecentMoodProperty()
     {
         // Arrange
-        var expectedMood = new MoodEntryResponse(
+        var expectedMood = new MoodEntrySummaryDto(
             Guid.NewGuid(),
             4,
-            DateTimeOffset.Now.AddHours(-1),
-            new List<EventLabelResponse>(),
+            SystemClock.Instance.GetCurrentInstant().Minus(Duration.FromHours(1)),
+            new List<EventLabelDto>(),
             null,
-            DateTimeOffset.Now,
-            null
+            SystemClock.Instance.GetCurrentInstant()
         );
 
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
                 It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, default))
-            .ReturnsAsync(new List<MoodEntryResponse> { expectedMood });
+            .ReturnsAsync(new MoodPagedResultDto(
+                new List<MoodEntrySummaryDto> { expectedMood },
+                1, 1, 1));
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, default))
-            .ReturnsAsync(new List<AssessmentResponse>());
+            .ReturnsAsync(new AssessmentPagedResultDto(
+                new List<AssessmentSummaryDto>(),
+                0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetMoodStatsAsync(
                 It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), default))
-            .ReturnsAsync(new MoodStatsResponse(5, 3.5, 4, new Dictionary<int, int>()));
+            .ReturnsAsync(new MoodStatsDto(5, 3.5, 4, new Dictionary<int, int>()));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
-            .ReturnsAsync(new List<HealthMetricResponse>());
+            .ReturnsAsync(new HealthMetricPagedResultDto(
+                new List<HealthMetricSummaryDto>(),
+                0, 1, 365));
 
         // Act
         await _viewModel.RefreshCommand.Execute().FirstAsync();
@@ -69,19 +79,25 @@ public class DashboardViewModelTests
         // Arrange
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
                 It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, default))
-            .ReturnsAsync(new List<MoodEntryResponse>());
+            .ReturnsAsync(new MoodPagedResultDto(
+                new List<MoodEntrySummaryDto>(),
+                0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, default))
-            .ReturnsAsync(new List<AssessmentResponse>());
+            .ReturnsAsync(new AssessmentPagedResultDto(
+                new List<AssessmentSummaryDto>(),
+                0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetMoodStatsAsync(
                 It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), default))
-            .ReturnsAsync(new MoodStatsResponse(0, 0, 0, new Dictionary<int, int>()));
+            .ReturnsAsync(new MoodStatsDto(0, 0, 0, new Dictionary<int, int>()));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
-            .ReturnsAsync(new List<HealthMetricResponse>());
+            .ReturnsAsync(new HealthMetricPagedResultDto(
+                new List<HealthMetricSummaryDto>(),
+                0, 1, 365));
 
         // Act
         await _viewModel.RefreshCommand.Execute().FirstAsync();
@@ -95,32 +111,36 @@ public class DashboardViewModelTests
     public async Task LoadDashboardData_WithLastAssessment_PopulatesAssessmentInfo()
     {
         // Arrange
-        var expectedAssessment = new AssessmentResponse(
+        var expectedAssessment = new AssessmentSummaryDto(
             Guid.NewGuid(),
             "PHQ9",
-            new Dictionary<string, int>(),
             12,
             "Moderate",
-            DateTimeOffset.Now.AddDays(-2),
-            DateTimeOffset.Now,
-            null
+            SystemClock.Instance.GetCurrentInstant().Minus(Duration.FromDays(2)),
+            SystemClock.Instance.GetCurrentInstant()
         );
 
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
                 It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, default))
-            .ReturnsAsync(new List<MoodEntryResponse>());
+            .ReturnsAsync(new MoodPagedResultDto(
+                new List<MoodEntrySummaryDto>(),
+                0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, default))
-            .ReturnsAsync(new List<AssessmentResponse> { expectedAssessment });
+            .ReturnsAsync(new AssessmentPagedResultDto(
+                new List<AssessmentSummaryDto> { expectedAssessment },
+                1, 1, 1));
 
         _apiClientMock.Setup(x => x.GetMoodStatsAsync(
                 It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), default))
-            .ReturnsAsync(new MoodStatsResponse(0, 0, 0, new Dictionary<int, int>()));
+            .ReturnsAsync(new MoodStatsDto(0, 0, 0, new Dictionary<int, int>()));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
-            .ReturnsAsync(new List<HealthMetricResponse>());
+            .ReturnsAsync(new HealthMetricPagedResultDto(
+                new List<HealthMetricSummaryDto>(),
+                0, 1, 365));
 
         // Act
         await _viewModel.RefreshCommand.Execute().FirstAsync();
@@ -137,29 +157,35 @@ public class DashboardViewModelTests
     public async Task LoadDashboardData_WithHealthMetrics_ShowsAverages()
     {
         // Arrange
-        var healthMetrics = new List<HealthMetricResponse>
+        var healthMetrics = new List<HealthMetricSummaryDto>
         {
-            new(Guid.NewGuid(), "SleepHours", 7.5m, DateOnly.Parse("2025-01-01"), DateTimeOffset.Now, null),
-            new(Guid.NewGuid(), "SleepHours", 8.0m, DateOnly.Parse("2025-01-02"), DateTimeOffset.Now, null),
-            new(Guid.NewGuid(), "WaterIntakeOz", 64m, DateOnly.Parse("2025-01-01"), DateTimeOffset.Now, null),
-            new(Guid.NewGuid(), "WaterIntakeOz", 72m, DateOnly.Parse("2025-01-02"), DateTimeOffset.Now, null)
+            new(Guid.NewGuid(), "SleepHours", 7.5m, DateOnly.Parse("2025-01-01"), SystemClock.Instance.GetCurrentInstant()),
+            new(Guid.NewGuid(), "SleepHours", 8.0m, DateOnly.Parse("2025-01-02"), SystemClock.Instance.GetCurrentInstant()),
+            new(Guid.NewGuid(), "WaterIntakeOz", 64m, DateOnly.Parse("2025-01-01"), SystemClock.Instance.GetCurrentInstant()),
+            new(Guid.NewGuid(), "WaterIntakeOz", 72m, DateOnly.Parse("2025-01-02"), SystemClock.Instance.GetCurrentInstant())
         };
 
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
                 It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, default))
-            .ReturnsAsync(new List<MoodEntryResponse>());
+            .ReturnsAsync(new MoodPagedResultDto(
+                new List<MoodEntrySummaryDto>(),
+                0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, default))
-            .ReturnsAsync(new List<AssessmentResponse>());
+            .ReturnsAsync(new AssessmentPagedResultDto(
+                new List<AssessmentSummaryDto>(),
+                0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetMoodStatsAsync(
                 It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), default))
-            .ReturnsAsync(new MoodStatsResponse(0, 0, 0, new Dictionary<int, int>()));
+            .ReturnsAsync(new MoodStatsDto(0, 0, 0, new Dictionary<int, int>()));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
-            .ReturnsAsync(healthMetrics);
+            .ReturnsAsync(new HealthMetricPagedResultDto(
+                healthMetrics,
+                4, 1, 365));
 
         // Act
         await _viewModel.RefreshCommand.Execute().FirstAsync();
@@ -200,22 +226,26 @@ public class DashboardViewModelTests
     public async Task IsLoading_ChangesCorrectlyDuringDataLoad()
     {
         // Arrange
-        var tcs = new TaskCompletionSource<List<MoodEntryResponse>>();
+        var tcs = new TaskCompletionSource<MoodPagedResultDto>();
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
                 It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, default))
             .Returns(tcs.Task);
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, default))
-            .ReturnsAsync(new List<AssessmentResponse>());
+            .ReturnsAsync(new AssessmentPagedResultDto(
+                new List<AssessmentSummaryDto>(),
+                0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetMoodStatsAsync(
                 It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), default))
-            .ReturnsAsync(new MoodStatsResponse(0, 0, 0, new Dictionary<int, int>()));
+            .ReturnsAsync(new MoodStatsDto(0, 0, 0, new Dictionary<int, int>()));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
-            .ReturnsAsync(new List<HealthMetricResponse>());
+            .ReturnsAsync(new HealthMetricPagedResultDto(
+                new List<HealthMetricSummaryDto>(),
+                0, 1, 365));
 
         // Act
         var loadTask = _viewModel.RefreshCommand.Execute();
@@ -224,7 +254,9 @@ public class DashboardViewModelTests
         await Assert.That(_viewModel.IsLoading).IsTrue();
 
         // Complete the async operation
-        tcs.SetResult(new List<MoodEntryResponse>());
+        tcs.SetResult(new MoodPagedResultDto(
+            new List<MoodEntrySummaryDto>(),
+            0, 1, 1));
         await loadTask;
 
         // Assert - Loading should be false after completion

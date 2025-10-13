@@ -4,6 +4,7 @@ using MentalHealthBar.Contracts.Responses.Assessments;
 using MentalHealthBar.Contracts.Responses.HealthMetrics;
 using MentalHealthBar.Contracts.Responses.MoodEntries;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -39,16 +40,16 @@ public class ViewTrendsTests : IDisposable
         // Expected: Data suitable for line chart (date vs mood score)
 
         // Arrange: Create mood entries over 30 days
-        var endDate = DateTimeOffset.UtcNow;
-        var startDate = endDate.AddDays(-30);
+        var endDate = SystemClock.Instance.GetCurrentInstant();
+        var startDate = endDate.Minus(Duration.FromDays(30));
 
-        await CreateMoodEntry(3, startDate.AddDays(2));
-        await CreateMoodEntry(2, startDate.AddDays(10));
-        await CreateMoodEntry(4, startDate.AddDays(20));
-        await CreateMoodEntry(3, startDate.AddDays(28));
+        await CreateMoodEntry(3, startDate.Plus(Duration.FromDays(2)));
+        await CreateMoodEntry(2, startDate.Plus(Duration.FromDays(10)));
+        await CreateMoodEntry(4, startDate.Plus(Duration.FromDays(20)));
+        await CreateMoodEntry(3, startDate.Plus(Duration.FromDays(28)));
 
         // Act: Request mood history for 30 days
-        var response = await _client.GetAsync($"/api/mood-entries?startDate={Uri.EscapeDataString(startDate.ToString("o"))}&endDate={Uri.EscapeDataString(endDate.ToString("o"))}");
+        var response = await _client.GetAsync($"/api/mood-entries?startDate={Uri.EscapeDataString(startDate.ToDateTimeOffset().ToString("o"))}&endDate={Uri.EscapeDataString(endDate.ToDateTimeOffset().ToString("o"))}");
 
         // Assert: Data returned
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -74,17 +75,18 @@ public class ViewTrendsTests : IDisposable
         // Expected: Statistical summary for selected date range
 
         // Arrange: Create entries with known distribution
-        var baseDate = DateTimeOffset.UtcNow.AddDays(-7);
-        await CreateMoodEntry(1, baseDate.AddDays(0));
-        await CreateMoodEntry(2, baseDate.AddDays(1));
-        await CreateMoodEntry(3, baseDate.AddDays(2));
-        await CreateMoodEntry(4, baseDate.AddDays(3));
-        await CreateMoodEntry(5, baseDate.AddDays(4));
+        var now = SystemClock.Instance.GetCurrentInstant();
+        var baseDate = now.Minus(Duration.FromDays(7));
+        await CreateMoodEntry(1, baseDate);
+        await CreateMoodEntry(2, baseDate.Plus(Duration.FromDays(1)));
+        await CreateMoodEntry(3, baseDate.Plus(Duration.FromDays(2)));
+        await CreateMoodEntry(4, baseDate.Plus(Duration.FromDays(3)));
+        await CreateMoodEntry(5, baseDate.Plus(Duration.FromDays(4)));
         // Average: 3.0, Median: 3
 
         // Act: Request mood statistics
-        var startDate = Uri.EscapeDataString(baseDate.ToString("o"));
-        var endDate = Uri.EscapeDataString(DateTimeOffset.UtcNow.ToString("o"));
+        var startDate = Uri.EscapeDataString(baseDate.ToDateTimeOffset().ToString("o"));
+        var endDate = Uri.EscapeDataString(now.ToDateTimeOffset().ToString("o"));
         var response = await _client.GetAsync($"/api/mood-entries/stats?startDate={startDate}&endDate={endDate}");
 
         // Assert: Statistics calculated
@@ -106,10 +108,11 @@ public class ViewTrendsTests : IDisposable
         // Expected: Historical scores show improvement or decline
 
         // Arrange: Complete assessments over 3 months
-        await CreateAssessment("PHQ9", 15, DateTimeOffset.UtcNow.AddDays(-90)); // Moderate-severe
-        await CreateAssessment("PHQ9", 11, DateTimeOffset.UtcNow.AddDays(-60)); // Moderate
-        await CreateAssessment("PHQ9", 7, DateTimeOffset.UtcNow.AddDays(-30));  // Mild
-        await CreateAssessment("PHQ9", 3, DateTimeOffset.UtcNow);               // Minimal
+        var now = SystemClock.Instance.GetCurrentInstant();
+        await CreateAssessment("PHQ9", 15, now.Minus(Duration.FromDays(90))); // Moderate-severe
+        await CreateAssessment("PHQ9", 11, now.Minus(Duration.FromDays(60))); // Moderate
+        await CreateAssessment("PHQ9", 7, now.Minus(Duration.FromDays(30)));  // Mild
+        await CreateAssessment("PHQ9", 3, now);               // Minimal
 
         // Act: Request assessment history for PHQ9
         var response = await _client.GetAsync("/api/assessments?type=PHQ9");
@@ -169,7 +172,7 @@ public class ViewTrendsTests : IDisposable
     }
 
     // Helper methods
-    private async Task<Guid> CreateMoodEntry(int score, DateTimeOffset recordedAt, List<Guid>? eventLabelIds = null)
+    private async Task<Guid> CreateMoodEntry(int score, Instant recordedAt, List<Guid>? eventLabelIds = null)
     {
         var request = new { MoodScore = score, RecordedAt = recordedAt, EventLabelIds = eventLabelIds ?? new List<Guid>(), Notes = (string?)null };
         var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
@@ -177,7 +180,7 @@ public class ViewTrendsTests : IDisposable
         return result!.Id;
     }
 
-    private async Task<Guid> CreateAssessment(string type, int targetScore, DateTimeOffset completedAt)
+    private async Task<Guid> CreateAssessment(string type, int targetScore, Instant completedAt)
     {
         var questionCount = type == "PHQ9" ? 9 : 7;
         var responses = new Dictionary<string, int>();

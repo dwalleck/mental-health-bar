@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Moq;
+using NodaTime;
 using MentalHealthBar.Contracts.Requests.HealthMetrics;
 using MentalHealthBar.Contracts.Responses.HealthMetrics;
 using MentalHealthBar.Desktop.Services;
@@ -48,7 +49,7 @@ public class HealthMetricsViewModelTests
             "SleepHours",
             7.5m,
             DateOnly.FromDateTime(DateTime.Today),
-            DateTimeOffset.Now,
+            SystemClock.Instance.GetCurrentInstant(),
             null
         );
 
@@ -64,20 +65,19 @@ public class HealthMetricsViewModelTests
 
         // Assert
         _apiClientMock.Verify(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), default), Times.Once);
-        await Assert.That(_viewModel.RecentMetrics).Contains(createdMetric);
+        await Assert.That(_viewModel.RecentMetrics.Any(m => m.Id == createdMetric.Id)).IsTrue();
     }
 
     [Test]
     public async Task SaveSleepCommand_UpdatesExistingMetric_WhenExists()
     {
         // Arrange
-        var existingMetric = new HealthMetricDto(
+        var existingMetric = new HealthMetricSummaryDto(
             Guid.NewGuid(),
             "SleepHours",
             7.0m,
             DateOnly.FromDateTime(DateTime.Today),
-            DateTimeOffset.Now,
-            null
+            SystemClock.Instance.GetCurrentInstant()
         );
 
         _viewModel.RecentMetrics.Add(existingMetric);
@@ -89,8 +89,8 @@ public class HealthMetricsViewModelTests
             "SleepHours",
             8.5m,
             DateOnly.FromDateTime(DateTime.Today),
-            DateTimeOffset.Now,
-            DateTimeOffset.Now
+            SystemClock.Instance.GetCurrentInstant(),
+            SystemClock.Instance.GetCurrentInstant()
         );
 
         _apiClientMock.Setup(x => x.UpdateHealthMetricAsync(
@@ -118,7 +118,7 @@ public class HealthMetricsViewModelTests
             "WaterIntakeOz",
             72m,
             DateOnly.FromDateTime(DateTime.Today),
-            DateTimeOffset.Now,
+            SystemClock.Instance.GetCurrentInstant(),
             null
         );
 
@@ -134,7 +134,7 @@ public class HealthMetricsViewModelTests
 
         // Assert
         _apiClientMock.Verify(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), default), Times.Once);
-        await Assert.That(_viewModel.RecentMetrics).Contains(createdMetric);
+        await Assert.That(_viewModel.RecentMetrics.Any(m => m.Id == createdMetric.Id)).IsTrue();
     }
 
     [Test]
@@ -147,12 +147,12 @@ public class HealthMetricsViewModelTests
         _apiClientMock.Setup(x => x.RecordHealthMetricAsync(
                 It.Is<RecordHealthMetricRequest>(r => r.Type == "SleepHours"),
                 default))
-            .ReturnsAsync(new HealthMetricDto(Guid.NewGuid(), "SleepHours", 7.5m, DateOnly.FromDateTime(DateTime.Today), DateTimeOffset.Now, null));
+            .ReturnsAsync(new HealthMetricDto(Guid.NewGuid(), "SleepHours", 7.5m, DateOnly.FromDateTime(DateTime.Today), SystemClock.Instance.GetCurrentInstant(), null));
 
         _apiClientMock.Setup(x => x.RecordHealthMetricAsync(
                 It.Is<RecordHealthMetricRequest>(r => r.Type == "WaterIntakeOz"),
                 default))
-            .ReturnsAsync(new HealthMetricDto(Guid.NewGuid(), "WaterIntakeOz", 80m, DateOnly.FromDateTime(DateTime.Today), DateTimeOffset.Now, null));
+            .ReturnsAsync(new HealthMetricDto(Guid.NewGuid(), "WaterIntakeOz", 80m, DateOnly.FromDateTime(DateTime.Today), SystemClock.Instance.GetCurrentInstant(), null));
 
         // Act
         await _viewModel.SaveBothCommand.Execute().FirstAsync();
@@ -193,16 +193,16 @@ public class HealthMetricsViewModelTests
     public async Task LoadRecentMetrics_PopulatesCollection()
     {
         // Arrange
-        var metrics = new List<HealthMetricDto>
+        var metrics = new List<HealthMetricSummaryDto>
         {
-            new(Guid.NewGuid(), "SleepHours", 8m, DateOnly.Parse("2025-01-01"), DateTimeOffset.Now, null),
-            new(Guid.NewGuid(), "WaterIntakeOz", 64m, DateOnly.Parse("2025-01-01"), DateTimeOffset.Now, null),
-            new(Guid.NewGuid(), "SleepHours", 7m, DateOnly.Parse("2025-01-02"), DateTimeOffset.Now, null)
+            new(Guid.NewGuid(), "SleepHours", 8m, DateOnly.Parse("2025-01-01"), SystemClock.Instance.GetCurrentInstant()),
+            new(Guid.NewGuid(), "WaterIntakeOz", 64m, DateOnly.Parse("2025-01-01"), SystemClock.Instance.GetCurrentInstant()),
+            new(Guid.NewGuid(), "SleepHours", 7m, DateOnly.Parse("2025-01-02"), SystemClock.Instance.GetCurrentInstant())
         };
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
-            .ReturnsAsync(metrics);
+            .ReturnsAsync(new HealthMetricPagedResultDto(metrics, 3, 1, 365));
 
         // Act
         await _viewModel.LoadRecentMetricsCommand.Execute().FirstAsync();
@@ -218,10 +218,10 @@ public class HealthMetricsViewModelTests
     {
         // Arrange
         var targetDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-5));
-        var metricsForDate = new List<HealthMetricDto>
+        var metricsForDate = new List<HealthMetricSummaryDto>
         {
-            new(Guid.NewGuid(), "SleepHours", 9m, targetDate, DateTimeOffset.Now, null),
-            new(Guid.NewGuid(), "WaterIntakeOz", 96m, targetDate, DateTimeOffset.Now, null)
+            new(Guid.NewGuid(), "SleepHours", 9m, targetDate, SystemClock.Instance.GetCurrentInstant()),
+            new(Guid.NewGuid(), "WaterIntakeOz", 96m, targetDate, SystemClock.Instance.GetCurrentInstant())
         };
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
@@ -229,7 +229,7 @@ public class HealthMetricsViewModelTests
                 It.Is<DateTime?>(d => DateOnly.FromDateTime(d.Value) == targetDate),
                 It.Is<DateTime?>(d => DateOnly.FromDateTime(d.Value) == targetDate),
                 1, 365, default))
-            .ReturnsAsync(metricsForDate);
+            .ReturnsAsync(new HealthMetricPagedResultDto(metricsForDate, 2, 1, 365));
 
         // Act
         _viewModel.RecordedDate = targetDate;
@@ -245,13 +245,12 @@ public class HealthMetricsViewModelTests
     public async Task DeleteMetric_RemovesFromCollection()
     {
         // Arrange
-        var metricToDelete = new HealthMetricDto(
+        var metricToDelete = new HealthMetricSummaryDto(
             Guid.NewGuid(),
             "SleepHours",
             8m,
             DateOnly.Parse("2025-01-01"),
-            DateTimeOffset.Now,
-            null
+            SystemClock.Instance.GetCurrentInstant()
         );
 
         _viewModel.RecentMetrics.Add(metricToDelete);
@@ -276,7 +275,7 @@ public class HealthMetricsViewModelTests
             "SleepHours",
             8m,
             DateOnly.FromDateTime(DateTime.Today),
-            DateTimeOffset.Now,
+            SystemClock.Instance.GetCurrentInstant(),
             null
         );
 

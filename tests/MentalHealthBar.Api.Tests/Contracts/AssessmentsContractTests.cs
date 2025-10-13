@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -275,18 +276,18 @@ public record CompleteAssessmentRequestDto
 {
     public string Type { get; init; } = "";
     public Dictionary<string, int> Responses { get; init; } = new();
-    public DateTime? CompletedAt { get; init; }
+    public Instant? CompletedAt { get; init; }
 }
 
 public record AssessmentResponseDto(
     Guid Id,
     string Type,
-    DateTime CompletedAt,
+    Instant CompletedAt,
     Dictionary<string, int> Responses,
     int TotalScore,
     string Severity,
-    DateTime CreatedAt,
-    DateTime? UpdatedAt
+    Instant CreatedAt,
+    Instant? UpdatedAt
 );
 
 public record AssessmentHistoryResponseDto(
@@ -299,7 +300,7 @@ public record AssessmentHistoryResponseDto(
 public record AssessmentSummaryDto(
     Guid Id,
     string Type,
-    DateTime CompletedAt,
+    Instant CompletedAt,
     int TotalScore,
     string Severity
 );

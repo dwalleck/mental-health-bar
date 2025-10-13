@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using MentalHealthBar.Contracts.Responses.Assessments;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -37,9 +38,10 @@ public class AssessmentHistoryTests : IDisposable
         // Expected: History displays all assessments in chronological order
 
         // Arrange: Complete 3 PHQ-9 assessments at different times
-        var assessment1 = await CreateAssessment("PHQ9", 5, DateTimeOffset.UtcNow.AddDays(-14)); // Mild
-        var assessment2 = await CreateAssessment("PHQ9", 11, DateTimeOffset.UtcNow.AddDays(-7)); // Moderate
-        var assessment3 = await CreateAssessment("PHQ9", 3, DateTimeOffset.UtcNow);              // Minimal
+        var now = SystemClock.Instance.GetCurrentInstant();
+        var assessment1 = await CreateAssessment("PHQ9", 5, now.Minus(Duration.FromDays(14))); // Mild
+        var assessment2 = await CreateAssessment("PHQ9", 11, now.Minus(Duration.FromDays(7))); // Moderate
+        var assessment3 = await CreateAssessment("PHQ9", 3, now);              // Minimal
 
         // Act: User requests assessment history
         var response = await _client.GetAsync("/api/assessments");
@@ -74,9 +76,10 @@ public class AssessmentHistoryTests : IDisposable
         // Expected: Can filter history to show only specific type (e.g., PHQ-9)
 
         // Arrange: Complete different assessment types
-        await CreateAssessment("PHQ9", 5, DateTimeOffset.UtcNow.AddDays(-7));
-        await CreateAssessment("GAD7", 8, DateTimeOffset.UtcNow.AddDays(-5));
-        await CreateAssessment("PHQ9", 3, DateTimeOffset.UtcNow);
+        var now = SystemClock.Instance.GetCurrentInstant();
+        await CreateAssessment("PHQ9", 5, now.Minus(Duration.FromDays(7)));
+        await CreateAssessment("GAD7", 8, now.Minus(Duration.FromDays(5)));
+        await CreateAssessment("PHQ9", 3, now);
 
         // Act: User filters by PHQ9 only
         var response = await _client.GetAsync("/api/assessments?type=PHQ9");
@@ -103,13 +106,14 @@ public class AssessmentHistoryTests : IDisposable
         // Expected: Only assessments within date range are returned
 
         // Arrange: Complete assessments across different dates
-        await CreateAssessment("PHQ9", 5, DateTimeOffset.UtcNow.AddDays(-30)); // Outside range
-        await CreateAssessment("PHQ9", 7, DateTimeOffset.UtcNow.AddDays(-10)); // Inside range
-        await CreateAssessment("PHQ9", 3, DateTimeOffset.UtcNow.AddDays(-5));  // Inside range
+        var now = SystemClock.Instance.GetCurrentInstant();
+        await CreateAssessment("PHQ9", 5, now.Minus(Duration.FromDays(30))); // Outside range
+        await CreateAssessment("PHQ9", 7, now.Minus(Duration.FromDays(10))); // Inside range
+        await CreateAssessment("PHQ9", 3, now.Minus(Duration.FromDays(5)));  // Inside range
 
         // Act: User requests last 14 days
-        var startDate = Uri.EscapeDataString(DateTimeOffset.UtcNow.AddDays(-14).ToString("o"));
-        var endDate = Uri.EscapeDataString(DateTimeOffset.UtcNow.ToString("o"));
+        var startDate = Uri.EscapeDataString(now.Minus(Duration.FromDays(14)).ToDateTimeOffset().ToString("o"));
+        var endDate = Uri.EscapeDataString(now.ToDateTimeOffset().ToString("o"));
         var response = await _client.GetAsync($"/api/assessments?startDate={startDate}&endDate={endDate}");
 
         // Assert
@@ -122,7 +126,7 @@ public class AssessmentHistoryTests : IDisposable
         await Assert.That(history).IsNotNull();
         foreach (var assessment in history!)
         {
-            await Assert.That(assessment.CompletedAt).IsGreaterThan(DateTimeOffset.UtcNow.AddDays(-14));
+            await Assert.That(assessment.CompletedAt).IsGreaterThan(now.Minus(Duration.FromDays(14)));
         }
     }
 
@@ -133,7 +137,7 @@ public class AssessmentHistoryTests : IDisposable
         // Expected: Full assessment with all responses is displayed
 
         // Arrange: Complete an assessment
-        var assessmentId = await CreateAssessment("PHQ9", 11, DateTimeOffset.UtcNow);
+        var assessmentId = await CreateAssessment("PHQ9", 11, SystemClock.Instance.GetCurrentInstant());
 
         // Act: User requests specific assessment details
         var response = await _client.GetAsync($"/api/assessments/{assessmentId}");
@@ -158,7 +162,7 @@ public class AssessmentHistoryTests : IDisposable
         // Expected: Assessment is deleted and no longer appears in history
 
         // Arrange: Complete an assessment
-        var assessmentId = await CreateAssessment("PHQ9", 5, DateTimeOffset.UtcNow);
+        var assessmentId = await CreateAssessment("PHQ9", 5, SystemClock.Instance.GetCurrentInstant());
 
         // Act: User deletes the assessment
         var deleteResponse = await _client.DeleteAsync($"/api/assessments/{assessmentId}");
@@ -172,7 +176,7 @@ public class AssessmentHistoryTests : IDisposable
     }
 
     // Helper method to create assessments
-    private async Task<Guid> CreateAssessment(string type, int targetScore, DateTimeOffset completedAt)
+    private async Task<Guid> CreateAssessment(string type, int targetScore, Instant completedAt)
     {
         var questionCount = type switch
         {

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using MentalHealthBar.Contracts.Responses.Assessments;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -47,7 +48,7 @@ public class CompleteAssessmentTests : IDisposable
         var request = new
         {
             Type = "PHQ9",
-            CompletedAt = DateTimeOffset.UtcNow,
+            CompletedAt = SystemClock.Instance.GetCurrentInstant(),
             Responses = responses
         };
 
@@ -66,7 +67,7 @@ public class CompleteAssessmentTests : IDisposable
 
         // Assert: Response includes assessment ID and timestamp
         await Assert.That(result.Id).IsNotEqualTo(Guid.Empty);
-        await Assert.That(result.CompletedAt).IsLessThanOrEqualTo(DateTimeOffset.UtcNow);
+        await Assert.That(result.CompletedAt).IsLessThanOrEqualTo(SystemClock.Instance.GetCurrentInstant());
     }
 
     [Test]
@@ -86,7 +87,7 @@ public class CompleteAssessmentTests : IDisposable
         var request = new
         {
             Type = "PHQ9",
-            CompletedAt = DateTimeOffset.UtcNow,
+            CompletedAt = SystemClock.Instance.GetCurrentInstant(),
             Responses = responses
         };
 
@@ -118,7 +119,7 @@ public class CompleteAssessmentTests : IDisposable
         var request = new
         {
             Type = "GAD7",
-            CompletedAt = DateTimeOffset.UtcNow,
+            CompletedAt = SystemClock.Instance.GetCurrentInstant(),
             Responses = responses
         };
 
@@ -149,7 +150,7 @@ public class CompleteAssessmentTests : IDisposable
         var request = new
         {
             Type = "PHQ9",
-            CompletedAt = DateTimeOffset.UtcNow,
+            CompletedAt = SystemClock.Instance.GetCurrentInstant(),
             Responses = responses
         };
 
@@ -177,7 +178,7 @@ public class CompleteAssessmentTests : IDisposable
         var request = new
         {
             Type = "PHQ9",
-            CompletedAt = DateTimeOffset.UtcNow.AddDays(1), // Future date
+            CompletedAt = SystemClock.Instance.GetCurrentInstant().Plus(Duration.FromDays(1)), // Future date
             Responses = responses
         };
 

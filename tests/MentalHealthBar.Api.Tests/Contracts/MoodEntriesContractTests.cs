@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using MentalHealthBar.Contracts.Responses.EventLabels;
 using MentalHealthBar.Api.Tests;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -42,7 +43,7 @@ public class MoodEntriesContractTests : IDisposable
         var request = new CreateMoodEntryRequestDto
         {
             MoodScore = 4,
-            RecordedAt = DateTime.UtcNow,
+            RecordedAt = SystemClock.Instance.GetCurrentInstant(),
             EventLabelIds = new List<Guid> { workId, exerciseId },
             Notes = "Feeling productive after morning workout"
         };
@@ -97,12 +98,13 @@ public class MoodEntriesContractTests : IDisposable
     public async Task GetMoodEntryHistory_WithDateFilter_ReturnsFilteredList()
     {
         // Arrange
-        var startDate = DateTime.UtcNow.AddDays(-7);
-        var endDate = DateTime.UtcNow;
+        var now = SystemClock.Instance.GetCurrentInstant();
+        var startDate = now.Minus(Duration.FromDays(7));
+        var endDate = now;
 
         // Act
         var response = await _client.GetAsync(
-            $"/api/mood-entries?startDate={startDate:O}&endDate={endDate:O}");
+            $"/api/mood-entries?startDate={startDate.ToDateTimeOffset():O}&endDate={endDate.ToDateTimeOffset():O}");
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -242,12 +244,13 @@ public class MoodEntriesContractTests : IDisposable
     public async Task GetMoodStats_WithDateRange_ReturnsStatistics()
     {
         // Arrange
-        var startDate = DateTime.UtcNow.AddDays(-30);
-        var endDate = DateTime.UtcNow;
+        var now = SystemClock.Instance.GetCurrentInstant();
+        var startDate = now.Minus(Duration.FromDays(30));
+        var endDate = now;
 
         // Act
         var response = await _client.GetAsync(
-            $"/api/mood-entries/stats?startDate={startDate:O}&endDate={endDate:O}");
+            $"/api/mood-entries/stats?startDate={startDate.ToDateTimeOffset():O}&endDate={endDate.ToDateTimeOffset():O}");
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -290,7 +293,7 @@ public class MoodEntriesContractTests : IDisposable
 public record CreateMoodEntryRequestDto
 {
     public int MoodScore { get; init; }
-    public DateTime? RecordedAt { get; init; }
+    public Instant? RecordedAt { get; init; }
     public List<Guid> EventLabelIds { get; init; } = new();
     public string? Notes { get; init; }
 }
@@ -306,11 +309,11 @@ public record MoodEntryResponseDto(
     Guid Id,
     int MoodScore,
     string MoodLabel,
-    DateTime RecordedAt,
+    Instant RecordedAt,
     List<EventLabelDto> EventLabels,
     string? Notes,
-    DateTime CreatedAt,
-    DateTime? UpdatedAt
+    Instant CreatedAt,
+    Instant? UpdatedAt
 );
 
 public record MoodEntryHistoryResponseDto(

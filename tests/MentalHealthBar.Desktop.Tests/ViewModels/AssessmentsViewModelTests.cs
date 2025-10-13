@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Moq;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -62,16 +63,19 @@ public class AssessmentsViewModelTests
     public async Task LoadAssessmentHistory_PopulatesHistoryInDescendingOrder()
     {
         // Arrange
-        var history = new List<AssessmentResponse>
+        var now = SystemClock.Instance.GetCurrentInstant();
+        var history = new List<AssessmentSummaryDto>
         {
-            new(Guid.NewGuid(), "PHQ9", new Dictionary<string, int>(), 10, "Mild", DateTimeOffset.Now.AddDays(-3), DateTimeOffset.Now, null),
-            new(Guid.NewGuid(), "GAD7", new Dictionary<string, int>(), 8, "Mild", DateTimeOffset.Now.AddDays(-1), DateTimeOffset.Now, null),
-            new(Guid.NewGuid(), "PHQ9", new Dictionary<string, int>(), 12, "Moderate", DateTimeOffset.Now.AddDays(-7), DateTimeOffset.Now, null)
+            new(Guid.NewGuid(), "PHQ9", 10, "Mild", now.Minus(Duration.FromDays(3)), now),
+            new(Guid.NewGuid(), "GAD7", 8, "Mild", now.Minus(Duration.FromDays(1)), now),
+            new(Guid.NewGuid(), "PHQ9", 12, "Moderate", now.Minus(Duration.FromDays(7)), now)
         };
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
                 null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, default))
-            .ReturnsAsync(history);
+            .ReturnsAsync(new AssessmentPagedResultDto(
+                history,
+                3, 1, 100));
 
         // Act
         await _viewModel.LoadHistoryCommand.Execute().FirstAsync();
@@ -209,14 +213,14 @@ public class AssessmentsViewModelTests
         _viewModel.CurrentResponses["Q2"] = 3;
         _viewModel.IsAssessmentInProgress = true;
 
-        var completedAssessment = new AssessmentResponse(
+        var completedAssessment = new AssessmentDetailDto(
             Guid.NewGuid(),
             "PHQ9",
             new Dictionary<string, int> { { "Q1", 2 }, { "Q2", 3 } },
             5,
             "Mild",
-            DateTimeOffset.Now,
-            DateTimeOffset.Now,
+            SystemClock.Instance.GetCurrentInstant(),
+            SystemClock.Instance.GetCurrentInstant(),
             null
         );
 
@@ -233,8 +237,9 @@ public class AssessmentsViewModelTests
 
         // Assert
         _apiClientMock.Verify(x => x.CompleteAssessmentAsync(It.IsAny<CompleteAssessmentRequest>(), default), Times.Once);
-        await Assert.That(_viewModel.AssessmentHistory).Contains(completedAssessment);
-        await Assert.That(_viewModel.AssessmentHistory[0]).IsEqualTo(completedAssessment); // Should be inserted at beginning
+        await Assert.That(_viewModel.AssessmentHistory.Count).IsEqualTo(1);
+        await Assert.That(_viewModel.AssessmentHistory[0].Type).IsEqualTo("PHQ9");
+        await Assert.That(_viewModel.AssessmentHistory[0].TotalScore).IsEqualTo(5);
         await Assert.That(_viewModel.IsAssessmentInProgress).IsFalse();
         await Assert.That(_viewModel.CurrentAssessment).IsNull();
     }

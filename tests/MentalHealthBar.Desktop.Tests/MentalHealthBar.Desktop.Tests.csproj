@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="NodaTime" />
     <PackageReference Include="TUnit" />
     <PackageReference Include="Moq" />
   </ItemGroup>

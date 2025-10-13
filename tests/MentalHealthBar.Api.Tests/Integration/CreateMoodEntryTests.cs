@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using MentalHealthBar.Contracts.Responses.EventLabels;
 using MentalHealthBar.Contracts.Responses.MoodEntries;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -47,7 +48,7 @@ public class CreateMoodEntryTests : IDisposable
         var request = new
         {
             MoodScore = 2,  // Below Average
-            RecordedAt = DateTimeOffset.UtcNow,
+            RecordedAt = SystemClock.Instance.GetCurrentInstant(),
             EventLabelIds = new List<Guid> { workStressId, deadlineId, tiredId },
             Notes = "Long day with tight deadlines. Felt overwhelmed."
         };
@@ -80,7 +81,7 @@ public class CreateMoodEntryTests : IDisposable
         var request = new
         {
             MoodScore = 4,  // Above Average
-            RecordedAt = DateTimeOffset.UtcNow,
+            RecordedAt = SystemClock.Instance.GetCurrentInstant(),
             EventLabelIds = new List<Guid>(),
             Notes = (string?)null
         };
@@ -107,7 +108,7 @@ public class CreateMoodEntryTests : IDisposable
         var request = new
         {
             MoodScore = 6,  // Invalid
-            RecordedAt = DateTimeOffset.UtcNow,
+            RecordedAt = SystemClock.Instance.GetCurrentInstant(),
             EventLabelIds = new List<Guid>(),
             Notes = (string?)null
         };
@@ -135,7 +136,7 @@ public class CreateMoodEntryTests : IDisposable
         var request = new
         {
             MoodScore = 3,
-            RecordedAt = DateTimeOffset.UtcNow,
+            RecordedAt = SystemClock.Instance.GetCurrentInstant(),
             EventLabelIds = labelIds,
             Notes = (string?)null
         };
@@ -161,7 +162,7 @@ public class CreateMoodEntryTests : IDisposable
         var createRequest = new
         {
             MoodScore = 2,
-            RecordedAt = DateTimeOffset.UtcNow,
+            RecordedAt = SystemClock.Instance.GetCurrentInstant(),
             EventLabelIds = new List<Guid> { tiredId },
             Notes = "Initial note"
         };
@@ -201,7 +202,7 @@ public class CreateMoodEntryTests : IDisposable
         var createRequest = new
         {
             MoodScore = 3,
-            RecordedAt = DateTimeOffset.UtcNow,
+            RecordedAt = SystemClock.Instance.GetCurrentInstant(),
             EventLabelIds = new List<Guid>(),
             Notes = (string?)null
         };
@@ -227,15 +228,16 @@ public class CreateMoodEntryTests : IDisposable
         // Expected: All entries are saved (no uniqueness constraint on date)
 
         // Arrange: Create 3 entries for same day
-        var today = new DateTimeOffset(DateTimeOffset.UtcNow.Date, TimeSpan.Zero);
+        var now = SystemClock.Instance.GetCurrentInstant();
+        var today = Instant.FromUtc(now.InUtc().Year, now.InUtc().Month, now.InUtc().Day, 0, 0, 0);
 
-        await CreateMoodEntry(2, today.AddHours(8));  // Morning
-        await CreateMoodEntry(4, today.AddHours(14)); // Afternoon
-        await CreateMoodEntry(3, today.AddHours(20)); // Evening
+        await CreateMoodEntry(2, today.Plus(Duration.FromHours(8)));  // Morning
+        await CreateMoodEntry(4, today.Plus(Duration.FromHours(14))); // Afternoon
+        await CreateMoodEntry(3, today.Plus(Duration.FromHours(20))); // Evening
 
         // Act: Retrieve all entries for today
-        var startDate = Uri.EscapeDataString(today.ToString("o"));
-        var endDate = Uri.EscapeDataString(today.AddDays(1).ToString("o"));
+        var startDate = Uri.EscapeDataString(today.ToDateTimeOffset().ToString("o"));
+        var endDate = Uri.EscapeDataString(today.Plus(Duration.FromDays(1)).ToDateTimeOffset().ToString("o"));
         var response = await _client.GetAsync($"/api/mood-entries?startDate={startDate}&endDate={endDate}");
 
         // Assert: All 3 entries returned
@@ -243,13 +245,14 @@ public class CreateMoodEntryTests : IDisposable
 
         var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>();
         var entries = pagedResult!.Items;
-        var todayEntries = entries.Where(e => e.RecordedAt.Date == today.Date).ToList();
+        var todayDate = today.ToDateTimeOffset().Date;
+        var todayEntries = entries.Where(e => e.RecordedAt.ToDateTimeOffset().Date == todayDate).ToList();
 
         await Assert.That(todayEntries.Count).IsGreaterThanOrEqualTo(3);
     }
 
     // Helper methods
-    private async Task<Guid> CreateMoodEntry(int score, DateTimeOffset recordedAt, List<Guid>? eventLabelIds = null)
+    private async Task<Guid> CreateMoodEntry(int score, Instant recordedAt, List<Guid>? eventLabelIds = null)
     {
         var request = new
         {

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -385,6 +386,6 @@ public record EventLabelResponseDto(
     Guid Id,
     string Name,
     string? Description,
-    DateTime CreatedAt,
-    DateTime? UpdatedAt
+    Instant CreatedAt,
+    Instant? UpdatedAt
 );

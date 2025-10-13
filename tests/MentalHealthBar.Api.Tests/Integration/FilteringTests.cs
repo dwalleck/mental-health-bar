@@ -5,6 +5,7 @@ using MentalHealthBar.Contracts.Responses.EventLabels;
 using MentalHealthBar.Contracts.Responses.HealthMetrics;
 using MentalHealthBar.Contracts.Responses.MoodEntries;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -41,15 +42,15 @@ public class FilteringTests : IDisposable
         // Expected: Only mood entries from past 7 days displayed
 
         // Arrange: Create entries across different dates
-        var now = DateTimeOffset.UtcNow;
-        await CreateMoodEntry(3, now.AddDays(-30), new List<Guid>()); // Outside range
-        await CreateMoodEntry(4, now.AddDays(-5), new List<Guid>());  // Inside range
-        await CreateMoodEntry(2, now.AddDays(-2), new List<Guid>());  // Inside range
+        var now = SystemClock.Instance.GetCurrentInstant();
+        await CreateMoodEntry(3, now.Minus(Duration.FromDays(30)), new List<Guid>()); // Outside range
+        await CreateMoodEntry(4, now.Minus(Duration.FromDays(5)), new List<Guid>());  // Inside range
+        await CreateMoodEntry(2, now.Minus(Duration.FromDays(2)), new List<Guid>());  // Inside range
         await CreateMoodEntry(5, now, new List<Guid>());              // Inside range
 
         // Act: Filter to last 7 days
-        var startDate = Uri.EscapeDataString(now.AddDays(-7).ToString("o"));
-        var endDate = Uri.EscapeDataString(now.ToString("o"));
+        var startDate = Uri.EscapeDataString(now.Minus(Duration.FromDays(7)).ToDateTimeOffset().ToString("o"));
+        var endDate = Uri.EscapeDataString(now.ToDateTimeOffset().ToString("o"));
         var response = await _client.GetAsync($"/api/mood-entries?startDate={startDate}&endDate={endDate}");
 
         // Assert: Only entries within range
@@ -59,9 +60,10 @@ public class FilteringTests : IDisposable
         var entries = pagedResult!.Items;
 
         await Assert.That(entries).IsNotNull();
+        var sevenDaysAgo = now.Minus(Duration.FromDays(7));
         foreach (var entry in entries)
         {
-            await Assert.That(entry.RecordedAt).IsGreaterThan(now.AddDays(-7));
+            await Assert.That(entry.RecordedAt).IsGreaterThan(sevenDaysAgo);
             await Assert.That(entry.RecordedAt).IsLessThanOrEqualTo(now);
         }
     }
@@ -79,10 +81,11 @@ public class FilteringTests : IDisposable
         var relaxingId = await CreateEventLabel("relaxing");
 
         // Arrange: Create entries with different labels
-        await CreateMoodEntry(2, DateTimeOffset.UtcNow.AddDays(-5), new List<Guid> { workStressId });
-        await CreateMoodEntry(3, DateTimeOffset.UtcNow.AddDays(-3), new List<Guid> { exerciseId });
-        await CreateMoodEntry(2, DateTimeOffset.UtcNow.AddDays(-1), new List<Guid> { workStressId, deadlineId });
-        await CreateMoodEntry(4, DateTimeOffset.UtcNow, new List<Guid> { relaxingId });
+        var now = SystemClock.Instance.GetCurrentInstant();
+        await CreateMoodEntry(2, now.Minus(Duration.FromDays(5)), new List<Guid> { workStressId });
+        await CreateMoodEntry(3, now.Minus(Duration.FromDays(3)), new List<Guid> { exerciseId });
+        await CreateMoodEntry(2, now.Minus(Duration.FromDays(1)), new List<Guid> { workStressId, deadlineId });
+        await CreateMoodEntry(4, now, new List<Guid> { relaxingId });
 
         // Act: Filter by "work stress" label ID
         var response = await _client.GetAsync($"/api/mood-entries?eventLabelId={workStressId}");
@@ -115,10 +118,11 @@ public class FilteringTests : IDisposable
         var exerciseId = await CreateEventLabel("exercise");
 
         // Arrange: Create entries with various label combinations
-        await CreateMoodEntry(2, DateTimeOffset.UtcNow.AddDays(-4), new List<Guid> { workId });
-        await CreateMoodEntry(3, DateTimeOffset.UtcNow.AddDays(-3), new List<Guid> { stressId });
-        await CreateMoodEntry(2, DateTimeOffset.UtcNow.AddDays(-2), new List<Guid> { workId, stressId });
-        await CreateMoodEntry(4, DateTimeOffset.UtcNow.AddDays(-1), new List<Guid> { exerciseId }); // Should not match
+        var now = SystemClock.Instance.GetCurrentInstant();
+        await CreateMoodEntry(2, now.Minus(Duration.FromDays(4)), new List<Guid> { workId });
+        await CreateMoodEntry(3, now.Minus(Duration.FromDays(3)), new List<Guid> { stressId });
+        await CreateMoodEntry(2, now.Minus(Duration.FromDays(2)), new List<Guid> { workId, stressId });
+        await CreateMoodEntry(4, now.Minus(Duration.FromDays(1)), new List<Guid> { exerciseId }); // Should not match
 
         // Act: Filter by "work" label (API only supports single label filter)
         var response = await _client.GetAsync($"/api/mood-entries?eventLabelId={workId}");
@@ -148,16 +152,16 @@ public class FilteringTests : IDisposable
         var exerciseId = await CreateEventLabel("exercise");
 
         // Arrange: Create test data
-        var now = DateTimeOffset.UtcNow;
+        var now = SystemClock.Instance.GetCurrentInstant();
 
-        await CreateMoodEntry(2, now.AddDays(-45), new List<Guid> { workStressId }); // Outside date range
-        await CreateMoodEntry(2, now.AddDays(-10), new List<Guid> { workStressId }); // Matches both
-        await CreateMoodEntry(3, now.AddDays(-5), new List<Guid> { exerciseId });     // Wrong label
-        await CreateMoodEntry(2, now.AddDays(-2), new List<Guid> { workStressId });  // Matches both
+        await CreateMoodEntry(2, now.Minus(Duration.FromDays(45)), new List<Guid> { workStressId }); // Outside date range
+        await CreateMoodEntry(2, now.Minus(Duration.FromDays(10)), new List<Guid> { workStressId }); // Matches both
+        await CreateMoodEntry(3, now.Minus(Duration.FromDays(5)), new List<Guid> { exerciseId });     // Wrong label
+        await CreateMoodEntry(2, now.Minus(Duration.FromDays(2)), new List<Guid> { workStressId });  // Matches both
 
         // Act: Apply both filters
-        var startDate = Uri.EscapeDataString(now.AddDays(-30).ToString("o"));
-        var endDate = Uri.EscapeDataString(now.ToString("o"));
+        var startDate = Uri.EscapeDataString(now.Minus(Duration.FromDays(30)).ToDateTimeOffset().ToString("o"));
+        var endDate = Uri.EscapeDataString(now.ToDateTimeOffset().ToString("o"));
         var response = await _client.GetAsync($"/api/mood-entries?startDate={startDate}&endDate={endDate}&eventLabelId={workStressId}");
 
         // Assert: Only entries matching both criteria
@@ -167,10 +171,11 @@ public class FilteringTests : IDisposable
         var entries = pagedResult!.Items;
 
         await Assert.That(entries).IsNotNull();
+        var thirtyDaysAgo = now.Minus(Duration.FromDays(30));
         foreach (var entry in entries)
         {
             // Must be within date range
-            await Assert.That(entry.RecordedAt).IsGreaterThan(now.AddDays(-30));
+            await Assert.That(entry.RecordedAt).IsGreaterThan(thirtyDaysAgo);
             await Assert.That(entry.RecordedAt).IsLessThanOrEqualTo(now);
 
             // Must have work stress label
@@ -185,10 +190,11 @@ public class FilteringTests : IDisposable
         // Expected: Only GAD-7 assessments displayed
 
         // Arrange: Complete different assessment types
-        await CreateAssessment("PHQ9", 5, DateTimeOffset.UtcNow.AddDays(-7));
-        await CreateAssessment("GAD7", 8, DateTimeOffset.UtcNow.AddDays(-5));
-        await CreateAssessment("GAD7", 6, DateTimeOffset.UtcNow.AddDays(-2));
-        await CreateAssessment("BDI", 12, DateTimeOffset.UtcNow);
+        var now = SystemClock.Instance.GetCurrentInstant();
+        await CreateAssessment("PHQ9", 5, now.Minus(Duration.FromDays(7)));
+        await CreateAssessment("GAD7", 8, now.Minus(Duration.FromDays(5)));
+        await CreateAssessment("GAD7", 6, now.Minus(Duration.FromDays(2)));
+        await CreateAssessment("BDI", 12, now);
 
         // Act: Filter by GAD7
         var response = await _client.GetAsync("/api/assessments?type=GAD7");
@@ -243,7 +249,7 @@ public class FilteringTests : IDisposable
     }
 
     // Helper methods
-    private async Task<Guid> CreateMoodEntry(int score, DateTimeOffset recordedAt, List<Guid> eventLabelIds)
+    private async Task<Guid> CreateMoodEntry(int score, Instant recordedAt, List<Guid> eventLabelIds)
     {
         var request = new { MoodScore = score, RecordedAt = recordedAt, EventLabelIds = eventLabelIds, Notes = (string?)null };
         var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
@@ -293,7 +299,7 @@ public class FilteringTests : IDisposable
         return result.Id;
     }
 
-    private async Task<Guid> CreateAssessment(string type, int targetScore, DateTimeOffset completedAt)
+    private async Task<Guid> CreateAssessment(string type, int targetScore, Instant completedAt)
     {
         var questionCount = type switch { "PHQ9" => 9, "GAD7" => 7, "BDI" => 21, "BAI" => 21, _ => 9 };
         var responses = new Dictionary<string, int>();

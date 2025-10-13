@@ -4,6 +4,7 @@ using Bogus;
 using MentalHealthBar.Contracts.Responses.EventLabels;
 using MentalHealthBar.Contracts.Responses.MoodEntries;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -88,10 +89,11 @@ public class EventLabelTests : IDisposable
         var deadlineId = await CreateLabel("deadline");
 
         // Act: Use label in multiple mood entries
+        var now = SystemClock.Instance.GetCurrentInstant();
         var entry1 = new
         {
             MoodScore = 2,
-            RecordedAt = DateTimeOffset.UtcNow.AddDays(-7),
+            RecordedAt = now.Minus(Duration.FromDays(7)),
             EventLabelIds = new List<Guid> { label!.Id },
             Notes = (string?)null
         };
@@ -99,7 +101,7 @@ public class EventLabelTests : IDisposable
         var entry2 = new
         {
             MoodScore = 2,
-            RecordedAt = DateTimeOffset.UtcNow,
+            RecordedAt = now,
             EventLabelIds = new List<Guid> { label.Id, deadlineId },
             Notes = (string?)null
         };

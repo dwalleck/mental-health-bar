@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ScottPlot;
 using ScottPlot.Avalonia;
+using NodaTime;
 
 namespace MentalHealthBar.Desktop.Services;
 
@@ -39,7 +40,7 @@ public class ChartingService : IChartingService
         {
             // Group by date and calculate daily average
             var dailyAverages = entries
-                .GroupBy(e => DateOnly.FromDateTime(e.RecordedAt.DateTime))
+                .GroupBy(e => DateOnly.FromDateTime(e.RecordedAt.ToDateTimeUtc()))
                 .Select(g => new
                 {
                     Date = g.Key,
@@ -60,7 +61,7 @@ public class ChartingService : IChartingService
         {
             // Show all individual entries as connected points
             var orderedEntries = entries.OrderBy(e => e.RecordedAt).ToList();
-            var dates = orderedEntries.Select(e => e.RecordedAt.DateTime.ToOADate()).ToArray();
+            var dates = orderedEntries.Select(e => e.RecordedAt.ToDateTimeUtc().ToOADate()).ToArray();
             var scores = orderedEntries.Select(e => (double)e.MoodScore).ToArray();
 
             var scatter = plot.Plot.Add.Scatter(dates, scores);
@@ -131,7 +132,7 @@ public class ChartingService : IChartingService
         }
 
         var orderedAssessments = filteredAssessments.OrderBy(a => a.CompletedAt).ToList();
-        var dates = orderedAssessments.Select(a => a.CompletedAt.DateTime.ToOADate()).ToArray();
+        var dates = orderedAssessments.Select(a => a.CompletedAt.ToDateTimeUtc().ToOADate()).ToArray();
         var scores = orderedAssessments.Select(a => (double)a.TotalScore).ToArray();
 
         var scatter = plot.Plot.Add.Scatter(dates, scores);

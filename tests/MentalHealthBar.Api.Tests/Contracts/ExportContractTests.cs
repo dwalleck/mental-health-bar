@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using MentalHealthBar.Contracts.Responses.EventLabels;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -55,10 +56,11 @@ public class ExportContractTests : IDisposable
     public async Task ExportToCsv_WithDateRange_ReturnsCsvFile()
     {
         // Arrange
+        var now = SystemClock.Instance.GetCurrentInstant();
         var request = new ExportRequestDto
         {
-            StartDate = DateTimeOffset.UtcNow.AddDays(-30),
-            EndDate = DateTimeOffset.UtcNow
+            StartDate = now.Minus(Duration.FromDays(30)).ToDateTimeOffset(),
+            EndDate = now.ToDateTimeOffset()
         };
 
         // Act
@@ -95,10 +97,11 @@ public class ExportContractTests : IDisposable
     public async Task ExportToCsv_InvalidDateRange_ReturnsBadRequest()
     {
         // Arrange - EndDate before StartDate
+        var now = SystemClock.Instance.GetCurrentInstant();
         var request = new ExportRequestDto
         {
-            StartDate = DateTimeOffset.UtcNow,
-            EndDate = DateTimeOffset.UtcNow.AddDays(-30)
+            StartDate = now.ToDateTimeOffset(),
+            EndDate = now.Minus(Duration.FromDays(30)).ToDateTimeOffset()
         };
 
         // Act
@@ -135,7 +138,7 @@ public class ExportContractTests : IDisposable
 
         var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>();
         await Assert.That(exportData).IsNotNull();
-        await Assert.That(exportData!.ExportedAt).IsGreaterThan(DateTimeOffset.MinValue);
+        await Assert.That(exportData!.ExportedAt).IsGreaterThan(Instant.MinValue);
         await Assert.That(exportData.DateRange).IsNotNull();
         await Assert.That(exportData.Assessments).IsNotNull();
         await Assert.That(exportData.MoodEntries).IsNotNull();
@@ -147,12 +150,13 @@ public class ExportContractTests : IDisposable
     public async Task ExportToJson_WithDateRange_ReturnsFilteredData()
     {
         // Arrange
-        var startDate = DateTimeOffset.UtcNow.AddDays(-7);
-        var endDate = DateTimeOffset.UtcNow;
+        var now = SystemClock.Instance.GetCurrentInstant();
+        var startDate = now.Minus(Duration.FromDays(7));
+        var endDate = now;
         var request = new ExportRequestDto
         {
-            StartDate = startDate,
-            EndDate = endDate
+            StartDate = startDate.ToDateTimeOffset(),
+            EndDate = endDate.ToDateTimeOffset()
         };
 
         // Act
@@ -196,10 +200,11 @@ public class ExportContractTests : IDisposable
     public async Task ExportToJson_InvalidDateRange_ReturnsBadRequest()
     {
         // Arrange - EndDate before StartDate
+        var now = SystemClock.Instance.GetCurrentInstant();
         var request = new ExportRequestDto
         {
-            StartDate = DateTimeOffset.UtcNow,
-            EndDate = DateTimeOffset.UtcNow.AddDays(-30)
+            StartDate = now.ToDateTimeOffset(),
+            EndDate = now.Minus(Duration.FromDays(30)).ToDateTimeOffset()
         };
 
         // Act
@@ -225,10 +230,10 @@ public class ExportContractTests : IDisposable
         await Assert.That(exportData).IsNotNull();
 
         // Verify required fields are present
-        await Assert.That(exportData!.ExportedAt).IsGreaterThan(DateTimeOffset.MinValue);
+        await Assert.That(exportData!.ExportedAt).IsGreaterThan(Instant.MinValue);
         await Assert.That(exportData.DateRange).IsNotNull();
-        await Assert.That(exportData.DateRange.Start).IsGreaterThan(DateTimeOffset.MinValue);
-        await Assert.That(exportData.DateRange.End).IsGreaterThan(DateTimeOffset.MinValue);
+        await Assert.That(exportData.DateRange.Start).IsGreaterThan(Instant.MinValue);
+        await Assert.That(exportData.DateRange.End).IsGreaterThan(Instant.MinValue);
         await Assert.That(exportData.Assessments).IsNotNull();
         await Assert.That(exportData.MoodEntries).IsNotNull();
         await Assert.That(exportData.HealthMetrics).IsNotNull();
@@ -255,7 +260,7 @@ public class ExportContractTests : IDisposable
             var assessment = exportData.Assessments[0];
             await Assert.That(assessment.Id).IsNotEqualTo(Guid.Empty);
             await Assert.That(assessment.Type).IsNotNull();
-            await Assert.That(assessment.CompletedAt).IsGreaterThan(DateTimeOffset.MinValue);
+            await Assert.That(assessment.CompletedAt).IsGreaterThan(Instant.MinValue);
             await Assert.That(assessment.TotalScore).IsGreaterThanOrEqualTo(0);
             await Assert.That(assessment.Severity).IsNotNull();
             await Assert.That(assessment.Responses).IsNotNull();
@@ -283,7 +288,7 @@ public class ExportContractTests : IDisposable
             await Assert.That(entry.Id).IsNotEqualTo(Guid.Empty);
             await Assert.That(entry.MoodScore).IsGreaterThan(0);
             await Assert.That(entry.MoodLabel).IsNotNull();
-            await Assert.That(entry.RecordedAt).IsGreaterThan(DateTimeOffset.MinValue);
+            await Assert.That(entry.RecordedAt).IsGreaterThan(Instant.MinValue);
             await Assert.That(entry.EventLabelNames).IsNotNull();
         }
     }
@@ -331,12 +336,12 @@ public record ExportDataResponseDto(
     List<ExportedHealthMetricDto> HealthMetrics,
     List<string> EventLabels,
     DateRangeDto DateRange,
-    DateTimeOffset ExportedAt
+    Instant ExportedAt
 );
 
 public record DateRangeDto(
-    DateTimeOffset Start,
-    DateTimeOffset End
+    Instant Start,
+    Instant End
 );
 
 public record ExportedAssessmentDto(
@@ -345,18 +350,18 @@ public record ExportedAssessmentDto(
     Dictionary<string, int> Responses,
     int TotalScore,
     string Severity,
-    DateTimeOffset CompletedAt,
-    DateTimeOffset CreatedAt
+    Instant CompletedAt,
+    Instant CreatedAt
 );
 
 public record ExportedMoodEntryDto(
     Guid Id,
     int MoodScore,
     string MoodLabel,
-    DateTimeOffset RecordedAt,
+    Instant RecordedAt,
     List<string> EventLabelNames,
     string? Notes,
-    DateTimeOffset CreatedAt
+    Instant CreatedAt
 );
 
 public record ExportedHealthMetricDto(
@@ -364,5 +369,5 @@ public record ExportedHealthMetricDto(
     string Type,
     decimal Value,
     DateOnly RecordedDate,
-    DateTimeOffset CreatedAt
+    Instant CreatedAt
 );

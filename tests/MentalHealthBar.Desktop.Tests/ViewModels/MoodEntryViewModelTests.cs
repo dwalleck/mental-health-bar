@@ -5,6 +5,7 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Moq;
+using NodaTime;
 using MentalHealthBar.Contracts.Requests.EventLabels;
 using MentalHealthBar.Contracts.Requests.MoodEntries;
 using MentalHealthBar.Contracts.Responses.EventLabels;
@@ -67,10 +68,10 @@ public class MoodEntryViewModelTests
         var savedResponse = new MoodEntryDto(
             Guid.NewGuid(),
             4,
-            DateTimeOffset.Now,
+            SystemClock.Instance.GetCurrentInstant(),
             new List<EventLabelDto>(),
             "Feeling good today",
-            DateTimeOffset.Now,
+            SystemClock.Instance.GetCurrentInstant(),
             null
         );
 
@@ -124,9 +125,9 @@ public class MoodEntryViewModelTests
         // Arrange
         var labels = new List<EventLabelDto>
         {
-            new(Guid.NewGuid(), "exercise", null, DateTimeOffset.Now, null),
-            new(Guid.NewGuid(), "work", null, DateTimeOffset.Now, null),
-            new(Guid.NewGuid(), "family", null, DateTimeOffset.Now, null)
+            new(Guid.NewGuid(), "exercise", null, SystemClock.Instance.GetCurrentInstant(), null),
+            new(Guid.NewGuid(), "work", null, SystemClock.Instance.GetCurrentInstant(), null),
+            new(Guid.NewGuid(), "family", null, SystemClock.Instance.GetCurrentInstant(), null)
         };
 
         _apiClientMock.Setup(x => x.GetEventLabelsAsync(null, default))
@@ -202,7 +203,7 @@ public class MoodEntryViewModelTests
             Guid.NewGuid(),
             "meditation",
             null,
-            DateTimeOffset.Now,
+            SystemClock.Instance.GetCurrentInstant(),
             null
         );
 

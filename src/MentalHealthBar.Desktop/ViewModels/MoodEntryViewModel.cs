@@ -6,6 +6,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ReactiveUI;
 using MentalHealthBar.Desktop.Services;
+using NodaTime;
 
 namespace MentalHealthBar.Desktop.ViewModels;
 
@@ -121,7 +122,7 @@ public class MoodEntryViewModel : ViewModelBase
 
             var request = new CreateMoodEntryRequest(
                 MoodScore: MoodScore,
-                RecordedAt: RecordedAt,
+                RecordedAt: Instant.FromDateTimeUtc(RecordedAt.ToUniversalTime()),
                 EventLabelIds: eventLabelIds,
                 Notes: string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim()
             );

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using NodaTime;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -347,7 +348,7 @@ public record HealthMetricCreateResponseDto(
     string Type,
     decimal Value,
     DateOnly RecordedDate,
-    DateTimeOffset CreatedAt
+    Instant CreatedAt
 );
 
 // Response DTO for GetById and Update endpoints (has UpdatedAt)
@@ -356,8 +357,8 @@ public record HealthMetricDetailResponseDto(
     string Type,
     decimal Value,
     DateOnly RecordedDate,
-    DateTimeOffset CreatedAt,
-    DateTimeOffset? UpdatedAt
+    Instant CreatedAt,
+    Instant? UpdatedAt
 );
 
 // Response DTO for history items (no UpdatedAt)
@@ -366,7 +367,7 @@ public record HealthMetricSummaryDto(
     string Type,
     decimal Value,
     DateOnly RecordedDate,
-    DateTimeOffset CreatedAt
+    Instant CreatedAt
 );
 
 public record HealthMetricHistoryResponseDto(

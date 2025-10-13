@@ -1,5 +1,6 @@
 using MentalHealthBar.Contracts.Responses.MoodEntries;
 using MentalHealthBar.Contracts.Responses.HealthMetrics;
+using NodaTime;
 
 namespace MentalHealthBar.Desktop.Models;
 
@@ -17,7 +18,7 @@ public static class DtoExtensions
             Id: Guid.NewGuid(),
             Name: t,
             Description: null,
-            CreatedAt: DateTimeOffset.Now,
+            CreatedAt: SystemClock.Instance.GetCurrentInstant(),
             UpdatedAt: null
         )).ToList();
 

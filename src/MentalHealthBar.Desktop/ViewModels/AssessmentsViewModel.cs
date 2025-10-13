@@ -6,6 +6,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using ReactiveUI;
 using MentalHealthBar.Desktop.Services;
+using NodaTime;
 
 namespace MentalHealthBar.Desktop.ViewModels;
 
@@ -189,7 +190,7 @@ public class AssessmentsViewModel : ViewModelBase
 
             var request = new CompleteAssessmentRequest(
                 Type: CurrentAssessment.Type,
-                CompletedAt: DateTimeOffset.Now,
+                CompletedAt: SystemClock.Instance.GetCurrentInstant(),
                 Responses: CurrentResponses
             );
 
