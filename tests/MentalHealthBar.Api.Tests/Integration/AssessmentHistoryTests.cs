@@ -16,12 +16,12 @@ namespace MentalHealthBar.Api.Tests.Integration;
 /// </summary>
 public class AssessmentHistoryTests : IDisposable
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
     public AssessmentHistoryTests()
     {
-        _factory = new WebApplicationFactory<Program>();
+        _factory = new TestWebApplicationFactory<Program>();
         _client = _factory.CreateClient();
     }
 
@@ -49,7 +49,7 @@ public class AssessmentHistoryTests : IDisposable
         // Assert: Request succeeds
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>(_factory);
         var history = pagedResult!.Items;
 
         // Assert: All 3 assessments are returned
@@ -87,7 +87,7 @@ public class AssessmentHistoryTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>(_factory);
         var history = pagedResult!.Items;
 
         // Assert: Only PHQ-9 assessments are returned
@@ -119,7 +119,7 @@ public class AssessmentHistoryTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>(_factory);
         var history = pagedResult!.Items;
 
         // Assert: Only recent assessments within 14 days
@@ -145,7 +145,7 @@ public class AssessmentHistoryTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var assessment = await response.Content.ReadFromJsonAsync<AssessmentDetailDto>();
+        var assessment = await response.Content.ReadFromJsonAsync<AssessmentDetailDto>(_factory);
 
         // Assert: Full details including individual responses
         await Assert.That(assessment).IsNotNull();
@@ -205,8 +205,8 @@ public class AssessmentHistoryTests : IDisposable
             Responses = responses
         };
 
-        var response = await _client.PostAsJsonAsync("/api/assessments", request);
-        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>();
+        var response = await _client.PostAsJsonAsync("/api/assessments", request, _factory);
+        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>(_factory);
         return result!.Id;
     }
 }

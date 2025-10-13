@@ -18,12 +18,12 @@ namespace MentalHealthBar.Api.Tests.Integration;
 /// </summary>
 public class ViewTrendsTests : IDisposable
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
     public ViewTrendsTests()
     {
-        _factory = new WebApplicationFactory<Program>();
+        _factory = new TestWebApplicationFactory<Program>();
         _client = _factory.CreateClient();
     }
 
@@ -54,7 +54,7 @@ public class ViewTrendsTests : IDisposable
         // Assert: Data returned
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>(_factory);
         var entries = pagedResult!.Items;
 
         // Assert: All entries within date range
@@ -92,7 +92,7 @@ public class ViewTrendsTests : IDisposable
         // Assert: Statistics calculated
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var stats = await response.Content.ReadFromJsonAsync<MoodStatsDto>();
+        var stats = await response.Content.ReadFromJsonAsync<MoodStatsDto>(_factory);
 
         // Assert: Stats include aggregate metrics
         await Assert.That(stats).IsNotNull();
@@ -120,7 +120,7 @@ public class ViewTrendsTests : IDisposable
         // Assert: Shows progression
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>(_factory);
         var history = pagedResult!.Items;
 
         // Assert: Ordered by date (most recent first)
@@ -156,7 +156,7 @@ public class ViewTrendsTests : IDisposable
         // Assert: Data for graphing
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<HealthMetricPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<HealthMetricPagedResultDto>(_factory);
         var metrics = pagedResult!.Items;
 
         await Assert.That(metrics).IsNotNull();
@@ -175,8 +175,8 @@ public class ViewTrendsTests : IDisposable
     private async Task<Guid> CreateMoodEntry(int score, Instant recordedAt, List<Guid>? eventLabelIds = null)
     {
         var request = new { MoodScore = score, RecordedAt = recordedAt, EventLabelIds = eventLabelIds ?? new List<Guid>(), Notes = (string?)null };
-        var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
-        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>();
+        var response = await _client.PostAsJsonAsync("/api/mood-entries", request, _factory);
+        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>(_factory);
         return result!.Id;
     }
 
@@ -193,16 +193,16 @@ public class ViewTrendsTests : IDisposable
         }
 
         var request = new { Type = type, CompletedAt = completedAt, Responses = responses };
-        var response = await _client.PostAsJsonAsync("/api/assessments", request);
-        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>();
+        var response = await _client.PostAsJsonAsync("/api/assessments", request, _factory);
+        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>(_factory);
         return result!.Id;
     }
 
     private async Task<Guid> RecordHealthMetric(string type, decimal value, DateOnly date)
     {
         var request = new { Type = type, Value = value, RecordedDate = date };
-        var response = await _client.PostAsJsonAsync("/api/health-metrics", request);
-        var result = await response.Content.ReadFromJsonAsync<HealthMetricDto>();
+        var response = await _client.PostAsJsonAsync("/api/health-metrics", request, _factory);
+        var result = await response.Content.ReadFromJsonAsync<HealthMetricDto>(_factory);
         return result!.Id;
     }
 

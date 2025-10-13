@@ -16,12 +16,12 @@ namespace MentalHealthBar.Api.Tests.Contracts;
 /// </summary>
 public class ExportContractTests : IDisposable
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
     public ExportContractTests()
     {
-        _factory = new WebApplicationFactory<Program>();
+        _factory = new TestWebApplicationFactory<Program>();
         _client = _factory.CreateClient();
     }
 
@@ -38,7 +38,7 @@ public class ExportContractTests : IDisposable
         var request = new ExportRequestDto();
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/csv", request);
+        var response = await _client.PostAsJsonAsync("/api/export/csv", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -64,7 +64,7 @@ public class ExportContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/csv", request);
+        var response = await _client.PostAsJsonAsync("/api/export/csv", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -86,7 +86,7 @@ public class ExportContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/csv", request);
+        var response = await _client.PostAsJsonAsync("/api/export/csv", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -105,7 +105,7 @@ public class ExportContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/csv", request);
+        var response = await _client.PostAsJsonAsync("/api/export/csv", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -118,7 +118,7 @@ public class ExportContractTests : IDisposable
         var request = new ExportRequestDto();
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert - Temporarily check error content
         if (response.StatusCode != HttpStatusCode.OK)
@@ -136,7 +136,7 @@ public class ExportContractTests : IDisposable
         await Assert.That(contentDisposition.FileName).Contains("mental-health-data");
         await Assert.That(contentDisposition.FileName).Contains(".json");
 
-        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>();
+        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>(_factory);
         await Assert.That(exportData).IsNotNull();
         await Assert.That(exportData!.ExportedAt).IsGreaterThan(Instant.MinValue);
         await Assert.That(exportData.DateRange).IsNotNull();
@@ -160,12 +160,12 @@ public class ExportContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>();
+        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>(_factory);
         await Assert.That(exportData).IsNotNull();
         await Assert.That(exportData!.DateRange.Start).IsEqualTo(startDate);
         await Assert.That(exportData.DateRange.End).IsEqualTo(endDate);
@@ -183,12 +183,12 @@ public class ExportContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>();
+        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>(_factory);
         await Assert.That(exportData).IsNotNull();
         // Note: Even excluded items should be present as empty arrays
         await Assert.That(exportData!.Assessments).IsNotNull();
@@ -208,7 +208,7 @@ public class ExportContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -221,12 +221,12 @@ public class ExportContractTests : IDisposable
         var request = new ExportRequestDto();
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>();
+        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>(_factory);
         await Assert.That(exportData).IsNotNull();
 
         // Verify required fields are present
@@ -247,12 +247,12 @@ public class ExportContractTests : IDisposable
         var request = new ExportRequestDto { IncludeAssessments = true };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>();
+        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>(_factory);
 
         // If there are assessments, verify their structure
         if (exportData!.Assessments.Count > 0)
@@ -274,12 +274,12 @@ public class ExportContractTests : IDisposable
         var request = new ExportRequestDto { IncludeMoodEntries = true };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>();
+        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>(_factory);
 
         // If there are mood entries, verify their structure
         if (exportData!.MoodEntries.Count > 0)
@@ -300,12 +300,12 @@ public class ExportContractTests : IDisposable
         var request = new ExportRequestDto { IncludeHealthMetrics = true };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>();
+        var exportData = await response.Content.ReadFromJsonAsync<ExportDataResponseDto>(_factory);
 
         // If there are health metrics, verify their structure
         if (exportData!.HealthMetrics.Count > 0)

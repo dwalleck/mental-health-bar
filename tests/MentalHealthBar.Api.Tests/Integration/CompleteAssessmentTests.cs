@@ -16,12 +16,12 @@ namespace MentalHealthBar.Api.Tests.Integration;
 /// </summary>
 public class CompleteAssessmentTests : IDisposable
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
     public CompleteAssessmentTests()
     {
-        _factory = new WebApplicationFactory<Program>();
+        _factory = new TestWebApplicationFactory<Program>();
         _client = _factory.CreateClient();
     }
 
@@ -53,12 +53,12 @@ public class CompleteAssessmentTests : IDisposable
         };
 
         // Act: User submits completed assessment
-        var response = await _client.PostAsJsonAsync("/api/assessments", request);
+        var response = await _client.PostAsJsonAsync("/api/assessments", request, _factory);
 
         // Assert: Request succeeds
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>();
+        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>(_factory);
 
         // Assert: Score is calculated correctly (all 0s = 0 total)
         await Assert.That(result).IsNotNull();
@@ -92,12 +92,12 @@ public class CompleteAssessmentTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/assessments", request);
+        var response = await _client.PostAsJsonAsync("/api/assessments", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>();
+        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>(_factory);
         await Assert.That(result!.TotalScore).IsEqualTo(11);
         await Assert.That(result.Severity).IsEqualTo("Moderate");
     }
@@ -124,12 +124,12 @@ public class CompleteAssessmentTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/assessments", request);
+        var response = await _client.PostAsJsonAsync("/api/assessments", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>();
+        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>(_factory);
         await Assert.That(result!.TotalScore).IsEqualTo(9);
         await Assert.That(result.Severity).IsEqualTo("Mild");
     }
@@ -155,7 +155,7 @@ public class CompleteAssessmentTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/assessments", request);
+        var response = await _client.PostAsJsonAsync("/api/assessments", request, _factory);
 
         // Assert: Validation error
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -183,7 +183,7 @@ public class CompleteAssessmentTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/assessments", request);
+        var response = await _client.PostAsJsonAsync("/api/assessments", request, _factory);
 
         // Assert: Validation error
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);

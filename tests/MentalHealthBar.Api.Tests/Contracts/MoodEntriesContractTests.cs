@@ -49,12 +49,12 @@ public class MoodEntriesContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
+        var response = await _client.PostAsJsonAsync("/api/mood-entries", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<MoodEntryResponseDto>();
+        var result = await response.Content.ReadFromJsonAsync<MoodEntryResponseDto>(_factory);
         await Assert.That(result).IsNotNull();
         await Assert.That(result!.Id).IsNotEqualTo(Guid.Empty);
         await Assert.That(result.MoodScore).IsEqualTo(request.MoodScore);
@@ -72,7 +72,7 @@ public class MoodEntriesContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
+        var response = await _client.PostAsJsonAsync("/api/mood-entries", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -87,7 +87,7 @@ public class MoodEntriesContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var history = await response.Content.ReadFromJsonAsync<MoodEntryHistoryResponseDto>();
+        var history = await response.Content.ReadFromJsonAsync<MoodEntryHistoryResponseDto>(_factory);
         await Assert.That(history).IsNotNull();
         await Assert.That(history!.Items).IsNotNull();
         await Assert.That(history.TotalCount).IsGreaterThanOrEqualTo(0);
@@ -109,7 +109,7 @@ public class MoodEntriesContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var history = await response.Content.ReadFromJsonAsync<MoodEntryHistoryResponseDto>();
+        var history = await response.Content.ReadFromJsonAsync<MoodEntryHistoryResponseDto>(_factory);
         await Assert.That(history).IsNotNull();
         // All entries should be within date range
         foreach (var item in history!.Items)
@@ -129,8 +129,8 @@ public class MoodEntriesContractTests : IDisposable
             MoodScore = 3,
             EventLabelIds = new List<Guid> { testId }
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/mood-entries", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<MoodEntryResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/mood-entries", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<MoodEntryResponseDto>(_factory);
 
         // Act
         var response = await _client.GetAsync($"/api/mood-entries/{created!.Id}");
@@ -138,7 +138,7 @@ public class MoodEntriesContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var entry = await response.Content.ReadFromJsonAsync<MoodEntryResponseDto>();
+        var entry = await response.Content.ReadFromJsonAsync<MoodEntryResponseDto>(_factory);
         await Assert.That(entry).IsNotNull();
         await Assert.That(entry!.Id).IsEqualTo(created.Id);
     }
@@ -169,8 +169,8 @@ public class MoodEntriesContractTests : IDisposable
             MoodScore = 3,
             EventLabelIds = new List<Guid> { initialId }
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/mood-entries", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<MoodEntryResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/mood-entries", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<MoodEntryResponseDto>(_factory);
 
         var updateRequest = new UpdateMoodEntryRequestDto
         {
@@ -180,12 +180,12 @@ public class MoodEntriesContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/mood-entries/{created!.Id}", updateRequest);
+        var response = await _client.PutAsJsonAsync($"/api/mood-entries/{created!.Id}", updateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var updated = await response.Content.ReadFromJsonAsync<MoodEntryResponseDto>();
+        var updated = await response.Content.ReadFromJsonAsync<MoodEntryResponseDto>(_factory);
         await Assert.That(updated).IsNotNull();
         await Assert.That(updated!.MoodScore).IsEqualTo(updateRequest.MoodScore!.Value);
         await Assert.That(updated.EventLabels.Count).IsEqualTo(2);
@@ -202,7 +202,7 @@ public class MoodEntriesContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/mood-entries/{invalidId}", updateRequest);
+        var response = await _client.PutAsJsonAsync($"/api/mood-entries/{invalidId}", updateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
@@ -217,8 +217,8 @@ public class MoodEntriesContractTests : IDisposable
             MoodScore = 3,
             EventLabelIds = new List<Guid>()
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/mood-entries", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<MoodEntryResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/mood-entries", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<MoodEntryResponseDto>(_factory);
 
         // Act
         var response = await _client.DeleteAsync($"/api/mood-entries/{created!.Id}");
@@ -255,7 +255,7 @@ public class MoodEntriesContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var stats = await response.Content.ReadFromJsonAsync<MoodStatsResponseDto>();
+        var stats = await response.Content.ReadFromJsonAsync<MoodStatsResponseDto>(_factory);
         await Assert.That(stats).IsNotNull();
         await Assert.That(stats!.EntryCount).IsGreaterThanOrEqualTo(0);
         await Assert.That(stats.ScoreDistribution).IsNotNull();
@@ -268,7 +268,7 @@ public class MoodEntriesContractTests : IDisposable
         var uniqueName = $"{name}-{_testId}";
         var request = new { Name = uniqueName, Description = (string?)null };
 
-        var response = await _client.PostAsJsonAsync("/api/event-labels", request);
+        var response = await _client.PostAsJsonAsync("/api/event-labels", request, _factory);
 
         // Check for success and provide detailed error information if it fails
         if (!response.IsSuccessStatusCode)
@@ -279,7 +279,7 @@ public class MoodEntriesContractTests : IDisposable
                               $"Response: {errorContent}");
         }
 
-        var result = await response.Content.ReadFromJsonAsync<EventLabelDto>();
+        var result = await response.Content.ReadFromJsonAsync<EventLabelDto>(_factory);
         if (result == null || result.Id == Guid.Empty)
         {
             throw new Exception($"Created event label '{uniqueName}' but received invalid response");

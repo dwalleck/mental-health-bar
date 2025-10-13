@@ -56,7 +56,7 @@ public class FilteringTests : IDisposable
         // Assert: Only entries within range
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>(_factory);
         var entries = pagedResult!.Items;
 
         await Assert.That(entries).IsNotNull();
@@ -93,7 +93,7 @@ public class FilteringTests : IDisposable
         // Assert: Only entries with "work stress" label
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>(_factory);
         var entries = pagedResult!.Items;
 
         await Assert.That(entries).IsNotNull();
@@ -130,7 +130,7 @@ public class FilteringTests : IDisposable
         // Assert: Entries with work label
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>(_factory);
         var entries = pagedResult!.Items;
 
         await Assert.That(entries).IsNotNull();
@@ -167,7 +167,7 @@ public class FilteringTests : IDisposable
         // Assert: Only entries matching both criteria
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>(_factory);
         var entries = pagedResult!.Items;
 
         await Assert.That(entries).IsNotNull();
@@ -202,7 +202,7 @@ public class FilteringTests : IDisposable
         // Assert: Only GAD-7 assessments
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>(_factory);
         var assessments = pagedResult!.Items;
 
         await Assert.That(assessments).IsNotNull();
@@ -236,7 +236,7 @@ public class FilteringTests : IDisposable
         // Assert: Only water metrics
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<HealthMetricPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<HealthMetricPagedResultDto>(_factory);
         var metrics = pagedResult!.Items;
 
         await Assert.That(metrics).IsNotNull();
@@ -252,7 +252,7 @@ public class FilteringTests : IDisposable
     private async Task<Guid> CreateMoodEntry(int score, Instant recordedAt, List<Guid> eventLabelIds)
     {
         var request = new { MoodScore = score, RecordedAt = recordedAt, EventLabelIds = eventLabelIds, Notes = (string?)null };
-        var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
+        var response = await _client.PostAsJsonAsync("/api/mood-entries", request, _factory);
 
         // Check for success and provide detailed error information if it fails
         if (!response.IsSuccessStatusCode)
@@ -264,7 +264,7 @@ public class FilteringTests : IDisposable
                               $"Response: {errorContent}");
         }
 
-        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>();
+        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>(_factory);
         if (result == null || result.Id == Guid.Empty)
         {
             throw new Exception("Created mood entry but received invalid response");
@@ -279,7 +279,7 @@ public class FilteringTests : IDisposable
         var uniqueName = $"{name}-{_testId}";
         var request = new { Name = uniqueName, Description = (string?)null };
 
-        var response = await _client.PostAsJsonAsync("/api/event-labels", request);
+        var response = await _client.PostAsJsonAsync("/api/event-labels", request, _factory);
 
         // Check for success and provide detailed error information if it fails
         if (!response.IsSuccessStatusCode)
@@ -290,7 +290,7 @@ public class FilteringTests : IDisposable
                               $"Response: {errorContent}");
         }
 
-        var result = await response.Content.ReadFromJsonAsync<EventLabelDto>();
+        var result = await response.Content.ReadFromJsonAsync<EventLabelDto>(_factory);
         if (result == null || result.Id == Guid.Empty)
         {
             throw new Exception($"Created event label '{uniqueName}' but received invalid response");
@@ -312,16 +312,16 @@ public class FilteringTests : IDisposable
         }
 
         var request = new { Type = type, CompletedAt = completedAt, Responses = responses };
-        var response = await _client.PostAsJsonAsync("/api/assessments", request);
-        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>();
+        var response = await _client.PostAsJsonAsync("/api/assessments", request, _factory);
+        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>(_factory);
         return result!.Id;
     }
 
     private async Task<Guid> RecordHealthMetric(string type, decimal value, DateOnly date)
     {
         var request = new { Type = type, Value = value, RecordedDate = date };
-        var response = await _client.PostAsJsonAsync("/api/health-metrics", request);
-        var result = await response.Content.ReadFromJsonAsync<HealthMetricDto>();
+        var response = await _client.PostAsJsonAsync("/api/health-metrics", request, _factory);
+        var result = await response.Content.ReadFromJsonAsync<HealthMetricDto>(_factory);
         return result!.Id;
     }
 }

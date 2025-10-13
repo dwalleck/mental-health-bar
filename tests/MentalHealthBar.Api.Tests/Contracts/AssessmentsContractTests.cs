@@ -15,12 +15,12 @@ namespace MentalHealthBar.Api.Tests.Contracts;
 /// </summary>
 public class AssessmentsContractTests : IDisposable
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
     public AssessmentsContractTests()
     {
-        _factory = new WebApplicationFactory<Program>();
+        _factory = new TestWebApplicationFactory<Program>();
         _client = _factory.CreateClient();
     }
 
@@ -39,7 +39,7 @@ public class AssessmentsContractTests : IDisposable
         // Assert - Following TDD, this should be 404/501 until implemented
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var templates = await response.Content.ReadFromJsonAsync<List<AssessmentTemplateDto>>();
+        var templates = await response.Content.ReadFromJsonAsync<List<AssessmentTemplateDto>>(_factory);
         await Assert.That(templates).IsNotNull();
         await Assert.That(templates!.Count).IsGreaterThan(0);
     }
@@ -56,7 +56,7 @@ public class AssessmentsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var template = await response.Content.ReadFromJsonAsync<AssessmentTemplateDto>();
+        var template = await response.Content.ReadFromJsonAsync<AssessmentTemplateDto>(_factory);
         await Assert.That(template).IsNotNull();
         await Assert.That(template!.Type).IsEqualTo(type);
         await Assert.That(template.Questions.Count).IsGreaterThan(0);
@@ -97,12 +97,12 @@ public class AssessmentsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/assessments", request);
+        var response = await _client.PostAsJsonAsync("/api/assessments", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<AssessmentResponseDto>();
+        var result = await response.Content.ReadFromJsonAsync<AssessmentResponseDto>(_factory);
         await Assert.That(result).IsNotNull();
         await Assert.That(result!.Id).IsNotEqualTo(Guid.Empty);
         await Assert.That(result.Type).IsEqualTo(request.Type);
@@ -125,7 +125,7 @@ public class AssessmentsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/assessments", request);
+        var response = await _client.PostAsJsonAsync("/api/assessments", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -140,7 +140,7 @@ public class AssessmentsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var history = await response.Content.ReadFromJsonAsync<AssessmentHistoryResponseDto>();
+        var history = await response.Content.ReadFromJsonAsync<AssessmentHistoryResponseDto>(_factory);
         await Assert.That(history).IsNotNull();
         await Assert.That(history!.Items).IsNotNull();
         await Assert.That(history.TotalCount).IsGreaterThanOrEqualTo(0);
@@ -160,7 +160,7 @@ public class AssessmentsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var history = await response.Content.ReadFromJsonAsync<AssessmentHistoryResponseDto>();
+        var history = await response.Content.ReadFromJsonAsync<AssessmentHistoryResponseDto>(_factory);
         await Assert.That(history).IsNotNull();
         // All returned items should match the filter
         foreach (var item in history!.Items)
@@ -182,8 +182,8 @@ public class AssessmentsContractTests : IDisposable
                 ["Q5"] = 2, ["Q6"] = 1, ["Q7"] = 2, ["Q8"] = 1, ["Q9"] = 0
             }
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/assessments", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<AssessmentResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/assessments", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<AssessmentResponseDto>(_factory);
 
         // Act
         var response = await _client.GetAsync($"/api/assessments/{created!.Id}");
@@ -191,7 +191,7 @@ public class AssessmentsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var assessment = await response.Content.ReadFromJsonAsync<AssessmentResponseDto>();
+        var assessment = await response.Content.ReadFromJsonAsync<AssessmentResponseDto>(_factory);
         await Assert.That(assessment).IsNotNull();
         await Assert.That(assessment!.Id).IsEqualTo(created.Id);
     }
@@ -222,8 +222,8 @@ public class AssessmentsContractTests : IDisposable
                 ["Q5"] = 2, ["Q6"] = 1, ["Q7"] = 2, ["Q8"] = 1, ["Q9"] = 0
             }
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/assessments", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<AssessmentResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/assessments", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<AssessmentResponseDto>(_factory);
 
         // Act
         var response = await _client.DeleteAsync($"/api/assessments/{created!.Id}");

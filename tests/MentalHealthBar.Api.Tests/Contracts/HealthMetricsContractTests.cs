@@ -15,12 +15,12 @@ namespace MentalHealthBar.Api.Tests.Contracts;
 /// </summary>
 public class HealthMetricsContractTests : IDisposable
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
     public HealthMetricsContractTests()
     {
-        _factory = new WebApplicationFactory<Program>();
+        _factory = new TestWebApplicationFactory<Program>();
         _client = _factory.CreateClient();
     }
 
@@ -43,12 +43,12 @@ public class HealthMetricsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/health-metrics", request);
+        var response = await _client.PostAsJsonAsync("/api/health-metrics", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<HealthMetricCreateResponseDto>();
+        var result = await response.Content.ReadFromJsonAsync<HealthMetricCreateResponseDto>(_factory);
         await Assert.That(result).IsNotNull();
         await Assert.That(result!.Id).IsNotEqualTo(Guid.Empty);
         await Assert.That(result.Type).IsEqualTo(request.Type);
@@ -67,7 +67,7 @@ public class HealthMetricsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/health-metrics", request);
+        var response = await _client.PostAsJsonAsync("/api/health-metrics", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -84,7 +84,7 @@ public class HealthMetricsContractTests : IDisposable
             Value = 7.5m,
             RecordedDate = date
         };
-        await _client.PostAsJsonAsync("/api/health-metrics", firstRequest);
+        await _client.PostAsJsonAsync("/api/health-metrics", firstRequest, _factory);
 
         // Try to create duplicate for same date and type
         var duplicateRequest = new RecordHealthMetricRequestDto
@@ -95,7 +95,7 @@ public class HealthMetricsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/health-metrics", duplicateRequest);
+        var response = await _client.PostAsJsonAsync("/api/health-metrics", duplicateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Conflict);
@@ -110,7 +110,7 @@ public class HealthMetricsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var history = await response.Content.ReadFromJsonAsync<HealthMetricHistoryResponseDto>();
+        var history = await response.Content.ReadFromJsonAsync<HealthMetricHistoryResponseDto>(_factory);
         await Assert.That(history).IsNotNull();
         await Assert.That(history!.Items).IsNotNull();
         await Assert.That(history.TotalCount).IsGreaterThanOrEqualTo(0);
@@ -130,7 +130,7 @@ public class HealthMetricsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var history = await response.Content.ReadFromJsonAsync<HealthMetricHistoryResponseDto>();
+        var history = await response.Content.ReadFromJsonAsync<HealthMetricHistoryResponseDto>(_factory);
         await Assert.That(history).IsNotNull();
         // All returned items should match the filter
         foreach (var item in history!.Items)
@@ -153,7 +153,7 @@ public class HealthMetricsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var history = await response.Content.ReadFromJsonAsync<HealthMetricHistoryResponseDto>();
+        var history = await response.Content.ReadFromJsonAsync<HealthMetricHistoryResponseDto>(_factory);
         await Assert.That(history).IsNotNull();
         // All entries should be within date range
         foreach (var item in history!.Items)
@@ -177,7 +177,7 @@ public class HealthMetricsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var history = await response.Content.ReadFromJsonAsync<HealthMetricHistoryResponseDto>();
+        var history = await response.Content.ReadFromJsonAsync<HealthMetricHistoryResponseDto>(_factory);
         await Assert.That(history).IsNotNull();
         await Assert.That(history!.PageSize).IsEqualTo(pageSize);
         await Assert.That(history.Page).IsEqualTo(page);
@@ -194,8 +194,8 @@ public class HealthMetricsContractTests : IDisposable
             Value = 64.0m,
             RecordedDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-Random.Shared.Next(100, 10000)))
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricCreateResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricCreateResponseDto>(_factory);
 
         // Act
         var response = await _client.GetAsync($"/api/health-metrics/{created!.Id}");
@@ -203,7 +203,7 @@ public class HealthMetricsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var metric = await response.Content.ReadFromJsonAsync<HealthMetricDetailResponseDto>();
+        var metric = await response.Content.ReadFromJsonAsync<HealthMetricDetailResponseDto>(_factory);
         await Assert.That(metric).IsNotNull();
         await Assert.That(metric!.Id).IsEqualTo(created.Id);
         await Assert.That(metric.Type).IsEqualTo(created.Type);
@@ -233,8 +233,8 @@ public class HealthMetricsContractTests : IDisposable
             Value = 6.5m,
             RecordedDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-Random.Shared.Next(100, 10000)))
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricCreateResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricCreateResponseDto>(_factory);
 
         var updateRequest = new UpdateHealthMetricRequestDto
         {
@@ -242,12 +242,12 @@ public class HealthMetricsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/health-metrics/{created!.Id}", updateRequest);
+        var response = await _client.PutAsJsonAsync($"/api/health-metrics/{created!.Id}", updateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var updated = await response.Content.ReadFromJsonAsync<HealthMetricDetailResponseDto>();
+        var updated = await response.Content.ReadFromJsonAsync<HealthMetricDetailResponseDto>(_factory);
         await Assert.That(updated).IsNotNull();
         await Assert.That(updated!.Value).IsEqualTo(updateRequest.Value);
         await Assert.That(updated.UpdatedAt).IsNotNull();
@@ -263,8 +263,8 @@ public class HealthMetricsContractTests : IDisposable
             Value = 7.0m,
             RecordedDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-Random.Shared.Next(100, 10000)))
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricCreateResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricCreateResponseDto>(_factory);
 
         var updateRequest = new UpdateHealthMetricRequestDto
         {
@@ -272,7 +272,7 @@ public class HealthMetricsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/health-metrics/{created!.Id}", updateRequest);
+        var response = await _client.PutAsJsonAsync($"/api/health-metrics/{created!.Id}", updateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -289,7 +289,7 @@ public class HealthMetricsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/health-metrics/{invalidId}", updateRequest);
+        var response = await _client.PutAsJsonAsync($"/api/health-metrics/{invalidId}", updateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
@@ -305,8 +305,8 @@ public class HealthMetricsContractTests : IDisposable
             Value = 48.0m,
             RecordedDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-Random.Shared.Next(100, 10000)))
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricCreateResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricCreateResponseDto>(_factory);
 
         // Act
         var response = await _client.DeleteAsync($"/api/health-metrics/{created!.Id}");

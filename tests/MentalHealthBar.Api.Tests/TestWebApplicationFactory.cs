@@ -3,14 +3,19 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NodaTime;
+using NodaTime.Serialization.SystemTextJson;
 using Serilog;
 using Serilog.Events;
 using Serilog.Extensions.Logging;
+using System.Text.Json;
 
 namespace MentalHealthBar.Api.Tests;
 
 public class TestWebApplicationFactory<TProgram> : WebApplicationFactory<TProgram> where TProgram : class
 {
+    public JsonSerializerOptions JsonSerializerOptions { get; private set; } = null!;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
@@ -43,5 +48,9 @@ public class TestWebApplicationFactory<TProgram> : WebApplicationFactory<TProgra
         });
 
         base.ConfigureWebHost(builder);
+
+        // Configure JSON serializer options with NodaTime support for test client
+        JsonSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        JsonSerializerOptions.ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
     }
 }

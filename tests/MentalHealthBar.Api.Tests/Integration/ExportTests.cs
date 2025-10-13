@@ -56,7 +56,7 @@ public class ExportTests : IDisposable
         );
 
         // Act: Request CSV export
-        var response = await _client.PostAsJsonAsync("/api/export/csv", request);
+        var response = await _client.PostAsJsonAsync("/api/export/csv", request, _factory);
 
         // Assert: Export succeeds
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -103,7 +103,7 @@ public class ExportTests : IDisposable
         );
 
         // Act: Request JSON export
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert: Export succeeds
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -112,7 +112,7 @@ public class ExportTests : IDisposable
         await Assert.That(response.Content.Headers.ContentType?.MediaType).Contains("json");
 
         // Assert: JSON structure is correct
-        var exportData = await response.Content.ReadFromJsonAsync<ExportDataDto>();
+        var exportData = await response.Content.ReadFromJsonAsync<ExportDataDto>(_factory);
 
         await Assert.That(exportData).IsNotNull();
         await Assert.That(exportData!.Assessments).IsNotNull();
@@ -147,10 +147,10 @@ public class ExportTests : IDisposable
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert
-        var exportData = await response.Content.ReadFromJsonAsync<ExportDataDto>();
+        var exportData = await response.Content.ReadFromJsonAsync<ExportDataDto>(_factory);
 
         await Assert.That(exportData).IsNotNull();
 
@@ -186,10 +186,10 @@ public class ExportTests : IDisposable
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert
-        var exportData = await response.Content.ReadFromJsonAsync<ExportDataDto>();
+        var exportData = await response.Content.ReadFromJsonAsync<ExportDataDto>(_factory);
 
         await Assert.That(exportData).IsNotNull();
         await Assert.That(exportData!.MoodEntries.Count).IsGreaterThan(0);
@@ -214,12 +214,12 @@ public class ExportTests : IDisposable
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/export/json", request);
+        var response = await _client.PostAsJsonAsync("/api/export/json", request, _factory);
 
         // Assert: Export succeeds (doesn't fail on empty data)
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var exportData = await response.Content.ReadFromJsonAsync<ExportDataDto>();
+        var exportData = await response.Content.ReadFromJsonAsync<ExportDataDto>(_factory);
 
         // Assert: Empty collections (not null)
         await Assert.That(exportData).IsNotNull();
@@ -232,7 +232,7 @@ public class ExportTests : IDisposable
     private async Task<Guid> CreateMoodEntry(int score, Instant recordedAt, List<Guid> eventLabelIds)
     {
         var request = new { MoodScore = score, RecordedAt = recordedAt, EventLabelIds = eventLabelIds, Notes = (string?)null };
-        var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
+        var response = await _client.PostAsJsonAsync("/api/mood-entries", request, _factory);
 
         // Check for success and provide detailed error information if it fails
         if (!response.IsSuccessStatusCode)
@@ -244,7 +244,7 @@ public class ExportTests : IDisposable
                               $"Response: {errorContent}");
         }
 
-        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>();
+        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>(_factory);
         if (result == null || result.Id == Guid.Empty)
         {
             throw new Exception("Created mood entry but received invalid response");
@@ -259,7 +259,7 @@ public class ExportTests : IDisposable
         var uniqueName = $"{name}-{_testId}";
         var request = new { Name = uniqueName, Description = (string?)null };
 
-        var response = await _client.PostAsJsonAsync("/api/event-labels", request);
+        var response = await _client.PostAsJsonAsync("/api/event-labels", request, _factory);
 
         // Check for success and provide detailed error information if it fails
         if (!response.IsSuccessStatusCode)
@@ -270,7 +270,7 @@ public class ExportTests : IDisposable
                               $"Response: {errorContent}");
         }
 
-        var result = await response.Content.ReadFromJsonAsync<EventLabelDto>();
+        var result = await response.Content.ReadFromJsonAsync<EventLabelDto>(_factory);
         if (result == null || result.Id == Guid.Empty)
         {
             throw new Exception($"Created event label '{uniqueName}' but received invalid response");
@@ -292,16 +292,16 @@ public class ExportTests : IDisposable
         }
 
         var request = new { Type = type, CompletedAt = completedAt, Responses = responses };
-        var response = await _client.PostAsJsonAsync("/api/assessments", request);
-        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>();
+        var response = await _client.PostAsJsonAsync("/api/assessments", request, _factory);
+        var result = await response.Content.ReadFromJsonAsync<AssessmentResultDto>(_factory);
         return result!.Id;
     }
 
     private async Task<Guid> RecordHealthMetric(string type, decimal value, DateOnly date)
     {
         var request = new { Type = type, Value = value, RecordedDate = date };
-        var response = await _client.PostAsJsonAsync("/api/health-metrics", request);
-        var result = await response.Content.ReadFromJsonAsync<HealthMetricDto>();
+        var response = await _client.PostAsJsonAsync("/api/health-metrics", request, _factory);
+        var result = await response.Content.ReadFromJsonAsync<HealthMetricDto>(_factory);
         return result!.Id;
     }
 

@@ -17,13 +17,13 @@ namespace MentalHealthBar.Api.Tests.Integration;
 /// </summary>
 public class HealthMetricsTests : IDisposable
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
     private readonly Faker _faker;
 
     public HealthMetricsTests()
     {
-        _factory = new WebApplicationFactory<Program>();
+        _factory = new TestWebApplicationFactory<Program>();
         _client = _factory.CreateClient();
         _faker = new Faker();
     }
@@ -51,12 +51,12 @@ public class HealthMetricsTests : IDisposable
         );
 
         // Act: User records sleep hours
-        var sleepResponse = await _client.PostAsJsonAsync("/api/health-metrics", sleepRequest);
+        var sleepResponse = await _client.PostAsJsonAsync("/api/health-metrics", sleepRequest, _factory);
 
         // Assert: Sleep metric saved
         await Assert.That(sleepResponse.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var sleepResult = await sleepResponse.Content.ReadFromJsonAsync<HealthMetricDto>();
+        var sleepResult = await sleepResponse.Content.ReadFromJsonAsync<HealthMetricDto>(_factory);
         await Assert.That(sleepResult!.Value).IsEqualTo(7.5m);
 
         // Arrange: Water intake metric
@@ -67,12 +67,12 @@ public class HealthMetricsTests : IDisposable
         );
 
         // Act: User records water intake
-        var waterResponse = await _client.PostAsJsonAsync("/api/health-metrics", waterRequest);
+        var waterResponse = await _client.PostAsJsonAsync("/api/health-metrics", waterRequest, _factory);
 
         // Assert: Water metric saved (no conflict, different type)
         await Assert.That(waterResponse.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var waterResult = await waterResponse.Content.ReadFromJsonAsync<HealthMetricDto>();
+        var waterResult = await waterResponse.Content.ReadFromJsonAsync<HealthMetricDto>(_factory);
         await Assert.That(waterResult!.Value).IsEqualTo(64.0m);
     }
 
@@ -90,7 +90,7 @@ public class HealthMetricsTests : IDisposable
             Value: 7.0m,
             RecordedDate: uniqueDate
         );
-        await _client.PostAsJsonAsync("/api/health-metrics", request1);
+        await _client.PostAsJsonAsync("/api/health-metrics", request1, _factory);
 
         // Act: Attempt to record sleep again for same date
         var request2 = new RecordHealthMetricRequest(
@@ -98,7 +98,7 @@ public class HealthMetricsTests : IDisposable
             Value: 8.0m,  // Different value, but same type+date
             RecordedDate: uniqueDate
         );
-        var response = await _client.PostAsJsonAsync("/api/health-metrics", request2);
+        var response = await _client.PostAsJsonAsync("/api/health-metrics", request2, _factory);
 
         // Assert: Conflict error
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Conflict);
@@ -119,19 +119,19 @@ public class HealthMetricsTests : IDisposable
             RecordedDate: uniqueDate
         );
 
-        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricDto>(_factory);
 
         // Act: Update to correct value
         var updateRequest = new UpdateHealthMetricRequest(Value: 7.5m);
-        var updateResponse = await _client.PutAsJsonAsync($"/api/health-metrics/{created!.Id}", updateRequest);
+        var updateResponse = await _client.PutAsJsonAsync($"/api/health-metrics/{created!.Id}", updateRequest, _factory);
 
         // Assert: Update succeeds
         await Assert.That(updateResponse.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
         // Verify updated value
         var getResponse = await _client.GetAsync($"/api/health-metrics/{created.Id}");
-        var updated = await getResponse.Content.ReadFromJsonAsync<HealthMetricDto>();
+        var updated = await getResponse.Content.ReadFromJsonAsync<HealthMetricDto>(_factory);
 
         await Assert.That(updated!.Value).IsEqualTo(7.5m);
         await Assert.That(updated.Type).IsEqualTo("SleepHours"); // Type unchanged
@@ -152,7 +152,7 @@ public class HealthMetricsTests : IDisposable
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/health-metrics", request);
+        var response = await _client.PostAsJsonAsync("/api/health-metrics", request, _factory);
 
         // Assert: Validation error
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -172,7 +172,7 @@ public class HealthMetricsTests : IDisposable
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/health-metrics", request);
+        var response = await _client.PostAsJsonAsync("/api/health-metrics", request, _factory);
 
         // Assert: Validation error
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -196,7 +196,7 @@ public class HealthMetricsTests : IDisposable
         var response = await _client.GetAsync("/api/health-metrics?type=SleepHours");
 
         // Assert: Only sleep metrics returned
-        var pagedResult = await response.Content.ReadFromJsonAsync<HealthMetricPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<HealthMetricPagedResultDto>(_factory);
         var metrics = pagedResult!.Items;
 
         await Assert.That(metrics).IsNotNull();
@@ -220,8 +220,8 @@ public class HealthMetricsTests : IDisposable
             RecordedDate: DateOnly.FromDateTime(_faker.Date.Between(DateTime.UtcNow.AddYears(-1), DateTime.UtcNow.AddDays(-1)))
         );
 
-        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", request);
-        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/health-metrics", request, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<HealthMetricDto>(_factory);
 
         // Act: Delete metric
         var deleteResponse = await _client.DeleteAsync($"/api/health-metrics/{created!.Id}");
@@ -250,12 +250,12 @@ public class HealthMetricsTests : IDisposable
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/health-metrics", request);
+        var response = await _client.PostAsJsonAsync("/api/health-metrics", request, _factory);
 
         // Assert: Zero is valid
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<HealthMetricDto>();
+        var result = await response.Content.ReadFromJsonAsync<HealthMetricDto>(_factory);
         await Assert.That(result!.Value).IsEqualTo(0.0m);
     }
 
@@ -268,8 +268,8 @@ public class HealthMetricsTests : IDisposable
             RecordedDate: date
         );
 
-        var response = await _client.PostAsJsonAsync("/api/health-metrics", request);
-        var result = await response.Content.ReadFromJsonAsync<HealthMetricDto>();
+        var response = await _client.PostAsJsonAsync("/api/health-metrics", request, _factory);
+        var result = await response.Content.ReadFromJsonAsync<HealthMetricDto>(_factory);
         return result!.Id;
     }
 

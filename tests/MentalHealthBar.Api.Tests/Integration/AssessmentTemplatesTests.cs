@@ -15,12 +15,12 @@ namespace MentalHealthBar.Api.Tests.Integration;
 /// </summary>
 public class AssessmentTemplatesTests : IDisposable
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
     public AssessmentTemplatesTests()
     {
-        _factory = new WebApplicationFactory<Program>();
+        _factory = new TestWebApplicationFactory<Program>();
         _client = _factory.CreateClient();
     }
 
@@ -42,7 +42,7 @@ public class AssessmentTemplatesTests : IDisposable
         // Assert: Request succeeds
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var templates = await response.Content.ReadFromJsonAsync<List<TemplateDto>>();
+        var templates = await response.Content.ReadFromJsonAsync<List<TemplateDto>>(_factory);
 
         // Assert: All 4 assessment types are returned
         await Assert.That(templates).IsNotNull();
@@ -72,7 +72,7 @@ public class AssessmentTemplatesTests : IDisposable
 
         // Arrange: Get templates to find PHQ-9 ID
         var templatesResponse = await _client.GetAsync("/api/assessments/templates");
-        var templates = await templatesResponse.Content.ReadFromJsonAsync<List<TemplateDto>>();
+        var templates = await templatesResponse.Content.ReadFromJsonAsync<List<TemplateDto>>(_factory);
         var phq9 = templates!.First(t => t.Type == "PHQ9");
 
         // Act: User requests PHQ-9 template details
@@ -81,7 +81,7 @@ public class AssessmentTemplatesTests : IDisposable
         // Assert: Request succeeds
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var template = await response.Content.ReadFromJsonAsync<TemplateDetailDto>();
+        var template = await response.Content.ReadFromJsonAsync<TemplateDetailDto>(_factory);
 
         // Assert: PHQ-9 has 9 questions
         await Assert.That(template).IsNotNull();

@@ -54,12 +54,12 @@ public class CreateMoodEntryTests : IDisposable
         };
 
         // Act: User submits mood entry
-        var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
+        var response = await _client.PostAsJsonAsync("/api/mood-entries", request, _factory);
 
         // Assert: Entry created successfully
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>();
+        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>(_factory);
 
         // Assert: All fields saved correctly
         await Assert.That(result).IsNotNull();
@@ -87,12 +87,12 @@ public class CreateMoodEntryTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
+        var response = await _client.PostAsJsonAsync("/api/mood-entries", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>();
+        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>(_factory);
         await Assert.That(result!.MoodScore).IsEqualTo(4);
         await Assert.That(result.EventLabels).IsNotNull();
         await Assert.That(result.EventLabels!.Count).IsEqualTo(0);
@@ -114,7 +114,7 @@ public class CreateMoodEntryTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
+        var response = await _client.PostAsJsonAsync("/api/mood-entries", request, _factory);
 
         // Assert: Validation error
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -142,7 +142,7 @@ public class CreateMoodEntryTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
+        var response = await _client.PostAsJsonAsync("/api/mood-entries", request, _factory);
 
         // Assert: Validation error
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -167,8 +167,8 @@ public class CreateMoodEntryTests : IDisposable
             Notes = "Initial note"
         };
 
-        var createResponse = await _client.PostAsJsonAsync("/api/mood-entries", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<MoodEntryDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/mood-entries", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<MoodEntryDto>(_factory);
 
         // Act: User updates the entry
         var updateRequest = new
@@ -178,14 +178,14 @@ public class CreateMoodEntryTests : IDisposable
             Notes = "Feeling better after coffee break"
         };
 
-        var updateResponse = await _client.PutAsJsonAsync($"/api/mood-entries/{created!.Id}", updateRequest);
+        var updateResponse = await _client.PutAsJsonAsync($"/api/mood-entries/{created!.Id}", updateRequest, _factory);
 
         // Assert: Update succeeds
         await Assert.That(updateResponse.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
         // Verify updated data
         var getResponse = await _client.GetAsync($"/api/mood-entries/{created.Id}");
-        var updated = await getResponse.Content.ReadFromJsonAsync<MoodEntryDto>();
+        var updated = await getResponse.Content.ReadFromJsonAsync<MoodEntryDto>(_factory);
 
         await Assert.That(updated!.MoodScore).IsEqualTo(3);
         await Assert.That(updated.EventLabels!.Count).IsEqualTo(2);
@@ -207,8 +207,8 @@ public class CreateMoodEntryTests : IDisposable
             Notes = (string?)null
         };
 
-        var createResponse = await _client.PostAsJsonAsync("/api/mood-entries", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<MoodEntryDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/mood-entries", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<MoodEntryDto>(_factory);
 
         // Act: User deletes the entry
         var deleteResponse = await _client.DeleteAsync($"/api/mood-entries/{created!.Id}");
@@ -243,7 +243,7 @@ public class CreateMoodEntryTests : IDisposable
         // Assert: All 3 entries returned
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>();
+        var pagedResult = await response.Content.ReadFromJsonAsync<MoodPagedResultDto>(_factory);
         var entries = pagedResult!.Items;
         var todayDate = today.ToDateTimeOffset().Date;
         var todayEntries = entries.Where(e => e.RecordedAt.ToDateTimeOffset().Date == todayDate).ToList();
@@ -262,7 +262,7 @@ public class CreateMoodEntryTests : IDisposable
             Notes = (string?)null
         };
 
-        var response = await _client.PostAsJsonAsync("/api/mood-entries", request);
+        var response = await _client.PostAsJsonAsync("/api/mood-entries", request, _factory);
 
         // Check for success and provide detailed error information if it fails
         if (!response.IsSuccessStatusCode)
@@ -274,7 +274,7 @@ public class CreateMoodEntryTests : IDisposable
                               $"Response: {errorContent}");
         }
 
-        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>();
+        var result = await response.Content.ReadFromJsonAsync<MoodEntryDto>(_factory);
         if (result == null || result.Id == Guid.Empty)
         {
             throw new Exception("Created mood entry but received invalid response");
@@ -289,7 +289,7 @@ public class CreateMoodEntryTests : IDisposable
         var uniqueName = $"{name}-{_testId}";
         var request = new { Name = uniqueName, Description = (string?)null };
 
-        var response = await _client.PostAsJsonAsync("/api/event-labels", request);
+        var response = await _client.PostAsJsonAsync("/api/event-labels", request, _factory);
 
         // Check for success and provide detailed error information if it fails
         if (!response.IsSuccessStatusCode)
@@ -300,7 +300,7 @@ public class CreateMoodEntryTests : IDisposable
                               $"Response: {errorContent}");
         }
 
-        var result = await response.Content.ReadFromJsonAsync<EventLabelDto>();
+        var result = await response.Content.ReadFromJsonAsync<EventLabelDto>(_factory);
         if (result == null || result.Id == Guid.Empty)
         {
             throw new Exception($"Created event label '{uniqueName}' but received invalid response");

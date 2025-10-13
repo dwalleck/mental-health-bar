@@ -15,12 +15,12 @@ namespace MentalHealthBar.Api.Tests.Contracts;
 /// </summary>
 public class EventLabelsContractTests : IDisposable
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
     public EventLabelsContractTests()
     {
-        _factory = new WebApplicationFactory<Program>();
+        _factory = new TestWebApplicationFactory<Program>();
         _client = _factory.CreateClient();
     }
 
@@ -42,12 +42,12 @@ public class EventLabelsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/event-labels", request);
+        var response = await _client.PostAsJsonAsync("/api/event-labels", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+        var result = await response.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
         await Assert.That(result).IsNotNull();
         await Assert.That(result!.Id).IsNotEqualTo(Guid.Empty);
         await Assert.That(result.Name).IsEqualTo(request.Name);
@@ -65,12 +65,12 @@ public class EventLabelsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/event-labels", request);
+        var response = await _client.PostAsJsonAsync("/api/event-labels", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
-        var result = await response.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+        var result = await response.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
         await Assert.That(result).IsNotNull();
         await Assert.That(result!.Name).IsEqualTo(request.Name);
         await Assert.That(result.Description).IsNull();
@@ -86,7 +86,7 @@ public class EventLabelsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/event-labels", request);
+        var response = await _client.PostAsJsonAsync("/api/event-labels", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -102,7 +102,7 @@ public class EventLabelsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/event-labels", request);
+        var response = await _client.PostAsJsonAsync("/api/event-labels", request, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -117,7 +117,7 @@ public class EventLabelsContractTests : IDisposable
         {
             Name = $"family time {uniqueSuffix}"
         };
-        await _client.PostAsJsonAsync("/api/event-labels", firstRequest);
+        await _client.PostAsJsonAsync("/api/event-labels", firstRequest, _factory);
 
         // Try to create duplicate
         var duplicateRequest = new CreateEventLabelRequestDto
@@ -126,7 +126,7 @@ public class EventLabelsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/event-labels", duplicateRequest);
+        var response = await _client.PostAsJsonAsync("/api/event-labels", duplicateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Conflict);
@@ -141,7 +141,7 @@ public class EventLabelsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var labels = await response.Content.ReadFromJsonAsync<List<EventLabelResponseDto>>();
+        var labels = await response.Content.ReadFromJsonAsync<List<EventLabelResponseDto>>(_factory);
         await Assert.That(labels).IsNotNull();
     }
 
@@ -150,9 +150,9 @@ public class EventLabelsContractTests : IDisposable
     {
         // Arrange - Create some labels with unique suffixes
         var uniqueSuffix = Random.Shared.Next(10000, 99999);
-        await _client.PostAsJsonAsync("/api/event-labels", new CreateEventLabelRequestDto { Name = $"work meeting {uniqueSuffix}" });
-        await _client.PostAsJsonAsync("/api/event-labels", new CreateEventLabelRequestDto { Name = $"workout {uniqueSuffix}" });
-        await _client.PostAsJsonAsync("/api/event-labels", new CreateEventLabelRequestDto { Name = $"family {uniqueSuffix}" });
+        await _client.PostAsJsonAsync("/api/event-labels", new CreateEventLabelRequestDto { Name = $"work meeting {uniqueSuffix}" }, _factory);
+        await _client.PostAsJsonAsync("/api/event-labels", new CreateEventLabelRequestDto { Name = $"workout {uniqueSuffix}" }, _factory);
+        await _client.PostAsJsonAsync("/api/event-labels", new CreateEventLabelRequestDto { Name = $"family {uniqueSuffix}" }, _factory);
 
         // Act - Search for labels containing "work"
         var response = await _client.GetAsync("/api/event-labels?search=work");
@@ -160,7 +160,7 @@ public class EventLabelsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var labels = await response.Content.ReadFromJsonAsync<List<EventLabelResponseDto>>();
+        var labels = await response.Content.ReadFromJsonAsync<List<EventLabelResponseDto>>(_factory);
         await Assert.That(labels).IsNotNull();
         // All returned labels should contain "work" (case-insensitive)
         foreach (var label in labels!)
@@ -179,8 +179,8 @@ public class EventLabelsContractTests : IDisposable
             Name = $"meditation {uniqueSuffix}",
             Description = "Mindfulness and meditation practice"
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/event-labels", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/event-labels", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
 
         // Act
         var response = await _client.GetAsync($"/api/event-labels/{created!.Id}");
@@ -188,7 +188,7 @@ public class EventLabelsContractTests : IDisposable
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var label = await response.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+        var label = await response.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
         await Assert.That(label).IsNotNull();
         await Assert.That(label!.Id).IsEqualTo(created.Id);
         await Assert.That(label.Name).IsEqualTo(created.Name);
@@ -217,8 +217,8 @@ public class EventLabelsContractTests : IDisposable
             Name = $"social event {uniqueSuffix}",
             Description = "Original description"
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/event-labels", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/event-labels", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
 
         var updateRequest = new UpdateEventLabelRequestDto
         {
@@ -227,12 +227,12 @@ public class EventLabelsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/event-labels/{created!.Id}", updateRequest);
+        var response = await _client.PutAsJsonAsync($"/api/event-labels/{created!.Id}", updateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var updated = await response.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+        var updated = await response.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
         await Assert.That(updated).IsNotNull();
         await Assert.That(updated!.Name).IsEqualTo(updateRequest.Name);
         await Assert.That(updated.Description).IsEqualTo(updateRequest.Description);
@@ -249,8 +249,8 @@ public class EventLabelsContractTests : IDisposable
             Name = $"hobby {uniqueSuffix}",
             Description = "Original description"
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/event-labels", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/event-labels", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
 
         var updateRequest = new UpdateEventLabelRequestDto
         {
@@ -258,12 +258,12 @@ public class EventLabelsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/event-labels/{created!.Id}", updateRequest);
+        var response = await _client.PutAsJsonAsync($"/api/event-labels/{created!.Id}", updateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
-        var updated = await response.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+        var updated = await response.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
         await Assert.That(updated).IsNotNull();
         await Assert.That(updated!.Name).IsEqualTo(updateRequest.Name);
     }
@@ -277,8 +277,8 @@ public class EventLabelsContractTests : IDisposable
         {
             Name = $"valid name {uniqueSuffix}"
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/event-labels", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/event-labels", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
 
         var updateRequest = new UpdateEventLabelRequestDto
         {
@@ -286,7 +286,7 @@ public class EventLabelsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/event-labels/{created!.Id}", updateRequest);
+        var response = await _client.PutAsJsonAsync($"/api/event-labels/{created!.Id}", updateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
@@ -304,7 +304,7 @@ public class EventLabelsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/event-labels/{invalidId}", updateRequest);
+        var response = await _client.PutAsJsonAsync($"/api/event-labels/{invalidId}", updateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
@@ -316,12 +316,12 @@ public class EventLabelsContractTests : IDisposable
         // Arrange - Create two labels with unique names
         var uniqueSuffix = Random.Shared.Next(10000, 99999);
         var first = await _client.PostAsJsonAsync("/api/event-labels",
-            new CreateEventLabelRequestDto { Name = $"existing label {uniqueSuffix}" });
-        var firstCreated = await first.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+            new CreateEventLabelRequestDto { Name = $"existing label {uniqueSuffix}" }, _factory);
+        var firstCreated = await first.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
 
         var second = await _client.PostAsJsonAsync("/api/event-labels",
-            new CreateEventLabelRequestDto { Name = $"another label {uniqueSuffix}" });
-        var secondCreated = await second.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+            new CreateEventLabelRequestDto { Name = $"another label {uniqueSuffix}" }, _factory);
+        var secondCreated = await second.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
 
         // Try to update second label to have same name as first
         var updateRequest = new UpdateEventLabelRequestDto
@@ -330,7 +330,7 @@ public class EventLabelsContractTests : IDisposable
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/event-labels/{secondCreated!.Id}", updateRequest);
+        var response = await _client.PutAsJsonAsync($"/api/event-labels/{secondCreated!.Id}", updateRequest, _factory);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Conflict);
@@ -345,8 +345,8 @@ public class EventLabelsContractTests : IDisposable
         {
             Name = $"temporary label {uniqueSuffix}"
         };
-        var createResponse = await _client.PostAsJsonAsync("/api/event-labels", createRequest);
-        var created = await createResponse.Content.ReadFromJsonAsync<EventLabelResponseDto>();
+        var createResponse = await _client.PostAsJsonAsync("/api/event-labels", createRequest, _factory);
+        var created = await createResponse.Content.ReadFromJsonAsync<EventLabelResponseDto>(_factory);
 
         // Act
         var response = await _client.DeleteAsync($"/api/event-labels/{created!.Id}");
