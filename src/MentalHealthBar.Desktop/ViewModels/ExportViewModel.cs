@@ -129,26 +129,23 @@ public class ExportViewModel : ViewModelBase
             ExportProgress = 25;
             StatusMessage = "Fetching data from server...";
 
-            byte[] data;
             string extension;
             string mimeType;
 
+            // Determine format settings
             if (SelectedFormat == ExportFormat.CSV)
             {
-                data = await _apiClient.ExportToCsvAsync(request, CancellationToken);
                 extension = "csv";
                 mimeType = "text/csv";
             }
             else
             {
-                var jsonString = await _apiClient.ExportToJsonAsync(request, CancellationToken);
-                data = System.Text.Encoding.UTF8.GetBytes(jsonString);
                 extension = "json";
                 mimeType = "application/json";
             }
 
-            ExportProgress = 75;
-            StatusMessage = "Data retrieved, preparing file...";
+            ExportProgress = 50;
+            StatusMessage = "Streaming data to file...";
 
             // Save file using Avalonia's storage provider
             if (StorageProvider != null)
@@ -171,8 +168,13 @@ public class ExportViewModel : ViewModelBase
 
                 if (file != null)
                 {
-                    await using var stream = await file.OpenWriteAsync();
-                    await stream.WriteAsync(data, 0, data.Length, CancellationToken);
+                    // Stream directly to file without loading into memory
+                    await using var outputStream = await file.OpenWriteAsync();
+                    await using var dataStream = SelectedFormat == ExportFormat.CSV
+                        ? await _apiClient.ExportToCsvAsync(request, CancellationToken)
+                        : await _apiClient.ExportToJsonAsync(request, CancellationToken);
+
+                    await dataStream.CopyToAsync(outputStream, CancellationToken);
 
                     ExportProgress = 100;
                     StatusMessage = $"Export completed successfully! File saved as {file.Name}";
@@ -192,7 +194,13 @@ public class ExportViewModel : ViewModelBase
                 var fileName = $"mental-health-export-{DateTime.Now:yyyy-MM-dd-HHmmss}.{extension}";
                 var filePath = Path.Combine(downloadsPath, fileName);
 
-                await File.WriteAllBytesAsync(filePath, data, CancellationToken);
+                // Stream directly to file without loading into memory
+                await using var outputStream = File.Create(filePath);
+                await using var dataStream = SelectedFormat == ExportFormat.CSV
+                    ? await _apiClient.ExportToCsvAsync(request, CancellationToken)
+                    : await _apiClient.ExportToJsonAsync(request, CancellationToken);
+
+                await dataStream.CopyToAsync(outputStream, CancellationToken);
 
                 ExportProgress = 100;
                 StatusMessage = $"Export completed! File saved to: {filePath}";

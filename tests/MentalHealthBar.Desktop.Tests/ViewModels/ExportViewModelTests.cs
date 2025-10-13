@@ -60,7 +60,7 @@ public class ExportViewModelTests
                     r.IncludeMoodEntries &&
                     r.IncludeHealthMetrics),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(csvData);
+            .ReturnsAsync(() => new MemoryStream(csvData));
 
         var mockFile = new Mock<IStorageFile>();
         mockFile.SetupGet(f => f.Name).Returns("export.csv");
@@ -86,9 +86,10 @@ public class ExportViewModelTests
         // Arrange
         _viewModel.SelectedFormat = ExportFormat.JSON;
         var jsonString = "{\"data\":\"test\"}";
+        var jsonData = Encoding.UTF8.GetBytes(jsonString);
 
         _apiClientMock.Setup(x => x.ExportToJsonAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(jsonString);
+            .ReturnsAsync(() => new MemoryStream(jsonData));
 
         var mockFile = new Mock<IStorageFile>();
         mockFile.SetupGet(f => f.Name).Returns("export.json");
@@ -111,8 +112,9 @@ public class ExportViewModelTests
     public async Task ExportCommand_UserCancelsFileSave_ShowsCancelMessage()
     {
         // Arrange
+        var csvData = new byte[] { 1, 2, 3 };
         _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new byte[] { 1, 2, 3 });
+            .ReturnsAsync(() => new MemoryStream(csvData));
 
         _storageProviderMock.Setup(x => x.SaveFilePickerAsync(It.IsAny<FilePickerSaveOptions>()))
             .ReturnsAsync((IStorageFile?)null); // User cancelled
@@ -196,7 +198,8 @@ public class ExportViewModelTests
     public async Task ExportProgress_UpdatesDuringExport()
     {
         // Arrange
-        var tcs = new TaskCompletionSource<byte[]>();
+        var csvData = new byte[] { 1, 2, 3 };
+        var tcs = new TaskCompletionSource<Stream>();
         _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()))
             .Returns(tcs.Task);
 
@@ -215,7 +218,7 @@ public class ExportViewModelTests
         await Assert.That(_viewModel.ExportProgress).IsGreaterThan(0);
 
         // Complete the operation
-        tcs.SetResult(new byte[] { 1, 2, 3 });
+        tcs.SetResult(new MemoryStream(csvData));
         await exportTask;
 
         await Assert.That(_viewModel.ExportProgress).IsEqualTo(100);
@@ -245,7 +248,7 @@ public class ExportViewModelTests
 
         var csvData = Encoding.UTF8.GetBytes("test,data");
         _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(csvData);
+            .ReturnsAsync(() => new MemoryStream(csvData));
 
         // Act
         await _viewModel.ExportCommand.Execute().FirstAsync();
@@ -261,7 +264,7 @@ public class ExportViewModelTests
         // Arrange
         var csvData = new byte[] { 1, 2, 3 };
         _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(csvData);
+            .ReturnsAsync(() => new MemoryStream(csvData));
 
         var mockFile = new Mock<IStorageFile>();
         mockFile.SetupGet(f => f.Name).Returns("export.csv");

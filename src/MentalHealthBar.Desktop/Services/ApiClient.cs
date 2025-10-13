@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -50,8 +51,9 @@ public interface IApiClient
     Task DeleteEventLabelAsync(Guid id, CancellationToken cancellationToken = default);
 
     // Export
-    Task<byte[]> ExportToCsvAsync(ExportRequest request, CancellationToken cancellationToken = default);
-    Task<string> ExportToJsonAsync(ExportRequest request, CancellationToken cancellationToken = default);
+    // Returns a Stream to avoid loading entire export into memory - caller must dispose
+    Task<Stream> ExportToCsvAsync(ExportRequest request, CancellationToken cancellationToken = default);
+    Task<Stream> ExportToJsonAsync(ExportRequest request, CancellationToken cancellationToken = default);
 }
 
 public class ApiClient : IApiClient
@@ -303,19 +305,23 @@ public class ApiClient : IApiClient
     }
 
     // Export
-    public async Task<byte[]> ExportToCsvAsync(ExportRequest request, CancellationToken cancellationToken = default)
+    // Note: Returns a Stream to avoid loading entire export into memory
+    // Caller is responsible for disposing the stream
+    public async Task<Stream> ExportToCsvAsync(ExportRequest request, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("export/csv", request, _jsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        // Use ReadAsStreamAsync instead of ReadAsByteArrayAsync to avoid memory issues with large exports
+        return await response.Content.ReadAsStreamAsync(cancellationToken);
     }
 
-    public async Task<string> ExportToJsonAsync(ExportRequest request, CancellationToken cancellationToken = default)
+    public async Task<Stream> ExportToJsonAsync(ExportRequest request, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("export/json", request, _jsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync(cancellationToken);
+        // Use ReadAsStreamAsync instead of ReadAsStringAsync to avoid memory issues with large exports
+        return await response.Content.ReadAsStreamAsync(cancellationToken);
     }
 }
