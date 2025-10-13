@@ -26,13 +26,13 @@ public interface IApiClient
     Task<List<AssessmentTemplateResponse>> GetAssessmentTemplatesAsync(CancellationToken cancellationToken = default);
     Task<AssessmentTemplateResponse> GetAssessmentTemplateAsync(string type, CancellationToken cancellationToken = default);
     Task<AssessmentResponse> CompleteAssessmentAsync(CompleteAssessmentRequest request, CancellationToken cancellationToken = default);
-    Task<List<AssessmentResponse>> GetAssessmentHistoryAsync(string? type = null, DateTime? startDate = null, DateTime? endDate = null, int page = 1, int pageSize = 100, CancellationToken cancellationToken = default);
+    Task<AssessmentPagedResultDto> GetAssessmentHistoryAsync(string? type = null, DateTime? startDate = null, DateTime? endDate = null, int page = 1, int pageSize = 100, CancellationToken cancellationToken = default);
     Task<AssessmentResponse> GetAssessmentByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task DeleteAssessmentAsync(Guid id, CancellationToken cancellationToken = default);
 
     // Mood Entries
     Task<MoodEntryResponse> CreateMoodEntryAsync(CreateMoodEntryRequest request, CancellationToken cancellationToken = default);
-    Task<List<MoodEntryResponse>> GetMoodHistoryAsync(DateTime? startDate = null, DateTime? endDate = null, string[]? tags = null, int page = 1, int pageSize = 500, CancellationToken cancellationToken = default);
+    Task<MoodPagedResultDto> GetMoodHistoryAsync(DateTime? startDate = null, DateTime? endDate = null, string[]? tags = null, int page = 1, int pageSize = 500, CancellationToken cancellationToken = default);
     Task<MoodEntryResponse> GetMoodEntryByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<MoodEntryResponse> UpdateMoodEntryAsync(Guid id, UpdateMoodEntryRequest request, CancellationToken cancellationToken = default);
     Task DeleteMoodEntryAsync(Guid id, CancellationToken cancellationToken = default);
@@ -40,7 +40,7 @@ public interface IApiClient
 
     // Health Metrics
     Task<HealthMetricResponse> RecordHealthMetricAsync(RecordHealthMetricRequest request, CancellationToken cancellationToken = default);
-    Task<List<HealthMetricResponse>> GetHealthMetricsHistoryAsync(string? type = null, DateTime? startDate = null, DateTime? endDate = null, int page = 1, int pageSize = 365, CancellationToken cancellationToken = default);
+    Task<HealthMetricPagedResultDto> GetHealthMetricsHistoryAsync(string? type = null, DateTime? startDate = null, DateTime? endDate = null, int page = 1, int pageSize = 365, CancellationToken cancellationToken = default);
     Task<HealthMetricResponse> GetHealthMetricByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<HealthMetricResponse> UpdateHealthMetricAsync(Guid id, UpdateHealthMetricRequest request, CancellationToken cancellationToken = default);
     Task DeleteHealthMetricAsync(Guid id, CancellationToken cancellationToken = default);
@@ -120,7 +120,7 @@ public class ApiClient : IApiClient
             ?? throw new InvalidOperationException("Failed to complete assessment");
     }
 
-    public async Task<List<AssessmentResponse>> GetAssessmentHistoryAsync(string? type = null, DateTime? startDate = null, DateTime? endDate = null, int page = 1, int pageSize = 100, CancellationToken cancellationToken = default)
+    public async Task<AssessmentPagedResultDto> GetAssessmentHistoryAsync(string? type = null, DateTime? startDate = null, DateTime? endDate = null, int page = 1, int pageSize = 100, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string>();
         if (!string.IsNullOrEmpty(type)) queryParams.Add($"type={type}");
@@ -135,8 +135,8 @@ public class ApiClient : IApiClient
             await _httpClient.GetAsync($"assessments{queryString}", cancellationToken));
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<List<AssessmentResponse>>(_jsonOptions, cancellationToken)
-            ?? new List<AssessmentResponse>();
+        return await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>(_jsonOptions, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to retrieve assessment history");
     }
 
     public async Task<AssessmentResponse> GetAssessmentByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -168,7 +168,7 @@ public class ApiClient : IApiClient
             ?? throw new InvalidOperationException("Failed to create mood entry");
     }
 
-    public async Task<List<MoodEntryResponse>> GetMoodHistoryAsync(DateTime? startDate = null, DateTime? endDate = null, string[]? tags = null, int page = 1, int pageSize = 500, CancellationToken cancellationToken = default)
+    public async Task<MoodPagedResultDto> GetMoodHistoryAsync(DateTime? startDate = null, DateTime? endDate = null, string[]? tags = null, int page = 1, int pageSize = 500, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string>();
         if (startDate.HasValue) queryParams.Add($"startDate={startDate.Value:yyyy-MM-dd}");
@@ -183,8 +183,8 @@ public class ApiClient : IApiClient
             await _httpClient.GetAsync($"mood-entries{queryString}", cancellationToken));
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<List<MoodEntryResponse>>(_jsonOptions, cancellationToken)
-            ?? new List<MoodEntryResponse>();
+        return await response.Content.ReadFromJsonAsync<MoodPagedResultDto>(_jsonOptions, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to retrieve mood history");
     }
 
     public async Task<MoodEntryResponse> GetMoodEntryByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -242,7 +242,7 @@ public class ApiClient : IApiClient
             ?? throw new InvalidOperationException("Failed to record health metric");
     }
 
-    public async Task<List<HealthMetricResponse>> GetHealthMetricsHistoryAsync(string? type = null, DateTime? startDate = null, DateTime? endDate = null, int page = 1, int pageSize = 365, CancellationToken cancellationToken = default)
+    public async Task<HealthMetricPagedResultDto> GetHealthMetricsHistoryAsync(string? type = null, DateTime? startDate = null, DateTime? endDate = null, int page = 1, int pageSize = 365, CancellationToken cancellationToken = default)
     {
         var queryParams = new List<string>();
         if (!string.IsNullOrEmpty(type)) queryParams.Add($"type={type}");
@@ -257,8 +257,8 @@ public class ApiClient : IApiClient
             await _httpClient.GetAsync($"health-metrics{queryString}", cancellationToken));
 
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<List<HealthMetricResponse>>(_jsonOptions, cancellationToken)
-            ?? new List<HealthMetricResponse>();
+        return await response.Content.ReadFromJsonAsync<HealthMetricPagedResultDto>(_jsonOptions, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to retrieve health metrics history");
     }
 
     public async Task<HealthMetricResponse> GetHealthMetricByIdAsync(Guid id, CancellationToken cancellationToken = default)

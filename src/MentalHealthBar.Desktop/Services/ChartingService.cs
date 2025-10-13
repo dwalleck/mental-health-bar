@@ -8,10 +8,10 @@ namespace MentalHealthBar.Desktop.Services;
 
 public interface IChartingService
 {
-    AvaPlot CreateMoodChart(List<MoodEntryResponse> entries, bool showDailyAverage = false);
-    AvaPlot CreateAssessmentChart(List<AssessmentResponse> assessments, string assessmentType);
-    AvaPlot CreateHealthMetricChart(List<HealthMetricResponse> metrics, string metricType);
-    AvaPlot CreateCombinedHealthChart(List<HealthMetricResponse> sleepMetrics, List<HealthMetricResponse> waterMetrics);
+    AvaPlot CreateMoodChart(List<MoodEntrySummaryResponse> entries, bool showDailyAverage = false);
+    AvaPlot CreateAssessmentChart(List<AssessmentSummaryResponse> assessments, string assessmentType);
+    AvaPlot CreateHealthMetricChart(List<HealthMetricSummaryResponse> metrics, string metricType);
+    AvaPlot CreateCombinedHealthChart(List<HealthMetricSummaryResponse> sleepMetrics, List<HealthMetricSummaryResponse> waterMetrics);
 }
 
 public class ChartingService : IChartingService
@@ -25,7 +25,7 @@ public class ChartingService : IChartingService
         Colors.Purple
     };
 
-    public AvaPlot CreateMoodChart(List<MoodEntryResponse> entries, bool showDailyAverage = false)
+    public AvaPlot CreateMoodChart(List<MoodEntrySummaryResponse> entries, bool showDailyAverage = false)
     {
         var plot = new AvaPlot();
 
@@ -116,7 +116,7 @@ public class ChartingService : IChartingService
         return plot;
     }
 
-    public AvaPlot CreateAssessmentChart(List<AssessmentResponse> assessments, string assessmentType)
+    public AvaPlot CreateAssessmentChart(List<AssessmentSummaryResponse> assessments, string assessmentType)
     {
         var plot = new AvaPlot();
 
@@ -173,7 +173,7 @@ public class ChartingService : IChartingService
         return plot;
     }
 
-    public AvaPlot CreateHealthMetricChart(List<HealthMetricResponse> metrics, string metricType)
+    public AvaPlot CreateHealthMetricChart(List<HealthMetricSummaryResponse> metrics, string metricType)
     {
         var plot = new AvaPlot();
 
@@ -227,7 +227,7 @@ public class ChartingService : IChartingService
         return plot;
     }
 
-    public AvaPlot CreateCombinedHealthChart(List<HealthMetricResponse> sleepMetrics, List<HealthMetricResponse> waterMetrics)
+    public AvaPlot CreateCombinedHealthChart(List<HealthMetricSummaryResponse> sleepMetrics, List<HealthMetricSummaryResponse> waterMetrics)
     {
         var plot = new AvaPlot();
 

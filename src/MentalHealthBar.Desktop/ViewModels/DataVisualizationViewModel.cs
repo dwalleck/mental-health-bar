@@ -144,7 +144,7 @@ public class DataVisualizationViewModel : ViewModelBase
                 endDate: endDate,
                 pageSize: 500);
 
-            MoodChart = _chartingService.CreateMoodChart(moodEntries, ShowDailyAverage);
+            MoodChart = _chartingService.CreateMoodChart(moodEntries.Items, ShowDailyAverage);
         }
         catch (Exception ex)
         {
@@ -168,7 +168,7 @@ public class DataVisualizationViewModel : ViewModelBase
                 startDate: startDate,
                 endDate: endDate);
 
-            AssessmentChart = _chartingService.CreateAssessmentChart(assessments, SelectedAssessmentType);
+            AssessmentChart = _chartingService.CreateAssessmentChart(assessments.Items, SelectedAssessmentType);
         }
         catch (Exception ex)
         {
@@ -192,8 +192,8 @@ public class DataVisualizationViewModel : ViewModelBase
                 endDate: endDate,
                 pageSize: 365);
 
-            var sleepMetrics = healthMetrics.Where(m => m.Type == "SleepHours").ToList();
-            var waterMetrics = healthMetrics.Where(m => m.Type == "WaterIntakeOz").ToList();
+            var sleepMetrics = healthMetrics.Items.Where(m => m.Type == "SleepHours").ToList();
+            var waterMetrics = healthMetrics.Items.Where(m => m.Type == "WaterIntakeOz").ToList();
 
             HealthChart = _chartingService.CreateCombinedHealthChart(sleepMetrics, waterMetrics);
         }

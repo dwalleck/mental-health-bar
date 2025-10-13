@@ -15,14 +15,14 @@ public class HealthMetricsViewModel : ViewModelBase
     private decimal _sleepHours = 8.0m;
     private decimal _waterIntakeOz = 64.0m;
     private DateOnly _recordedDate = DateOnly.FromDateTime(DateTime.Today);
-    private ObservableCollection<HealthMetricResponse> _recentMetrics;
+    private ObservableCollection<HealthMetricSummaryResponse> _recentMetrics;
     private bool _isLoading;
     private string? _statusMessage;
 
     public HealthMetricsViewModel(IApiClient apiClient)
     {
         _apiClient = apiClient;
-        _recentMetrics = new ObservableCollection<HealthMetricResponse>();
+        _recentMetrics = new ObservableCollection<HealthMetricSummaryResponse>();
 
         // Commands with validation
         var canSave = this.WhenAnyValue(
@@ -66,7 +66,7 @@ public class HealthMetricsViewModel : ViewModelBase
         }
     }
 
-    public ObservableCollection<HealthMetricResponse> RecentMetrics
+    public ObservableCollection<HealthMetricSummaryResponse> RecentMetrics
     {
         get => _recentMetrics;
         set => this.RaiseAndSetIfChanged(ref _recentMetrics, value);
@@ -124,9 +124,15 @@ public class HealthMetricsViewModel : ViewModelBase
                 var updateRequest = new UpdateHealthMetricRequest(Value: value);
                 var updated = await _apiClient.UpdateHealthMetricAsync(existing.Id, updateRequest);
 
-                // Update in collection
+                // Update in collection (convert to summary)
                 var index = RecentMetrics.IndexOf(existing);
-                RecentMetrics[index] = updated;
+                RecentMetrics[index] = new HealthMetricSummaryResponse(
+                    updated.Id,
+                    updated.Type,
+                    updated.Value,
+                    updated.RecordedDate,
+                    updated.CreatedAt
+                );
 
                 StatusMessage = $"{type} updated successfully";
             }
@@ -141,8 +147,14 @@ public class HealthMetricsViewModel : ViewModelBase
 
                 var result = await _apiClient.RecordHealthMetricAsync(request);
 
-                // Add to collection
-                RecentMetrics.Insert(0, result);
+                // Add to collection (convert to summary)
+                RecentMetrics.Insert(0, new HealthMetricSummaryResponse(
+                    result.Id,
+                    result.Type,
+                    result.Value,
+                    result.RecordedDate,
+                    result.CreatedAt
+                ));
 
                 StatusMessage = $"{type} recorded successfully";
             }
@@ -173,7 +185,7 @@ public class HealthMetricsViewModel : ViewModelBase
                 endDate: DateTime.Now);
 
             RecentMetrics.Clear();
-            foreach (var metric in metrics.OrderByDescending(m => m.RecordedDate).ThenBy(m => m.Type))
+            foreach (var metric in metrics.Items.OrderByDescending(m => m.RecordedDate).ThenBy(m => m.Type))
             {
                 RecentMetrics.Add(metric);
             }
@@ -199,13 +211,13 @@ public class HealthMetricsViewModel : ViewModelBase
                 endDate: dateTime);
 
             // Update values if metrics exist for this date
-            var sleepMetric = metrics.FirstOrDefault(m => m.Type == "SleepHours");
+            var sleepMetric = metrics.Items.FirstOrDefault(m => m.Type == "SleepHours");
             if (sleepMetric != null)
             {
                 SleepHours = sleepMetric.Value;
             }
 
-            var waterMetric = metrics.FirstOrDefault(m => m.Type == "WaterIntakeOz");
+            var waterMetric = metrics.Items.FirstOrDefault(m => m.Type == "WaterIntakeOz");
             if (waterMetric != null)
             {
                 WaterIntakeOz = waterMetric.Value;

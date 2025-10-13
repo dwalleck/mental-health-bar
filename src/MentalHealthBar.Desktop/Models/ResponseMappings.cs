@@ -15,14 +15,17 @@ global using UpdateEventLabelRequest = MentalHealthBar.Contracts.Requests.EventL
 global using ExportRequest = MentalHealthBar.Contracts.Requests.Export.ExportRequest;
 
 global using AssessmentResponse = MentalHealthBar.Contracts.Responses.Assessments.AssessmentDetailDto;
+global using AssessmentSummaryResponse = MentalHealthBar.Contracts.Responses.Assessments.AssessmentSummaryDto;
 global using AssessmentTemplateResponse = MentalHealthBar.Contracts.Responses.Assessments.TemplateDetailDto;
 global using QuestionResponse = MentalHealthBar.Contracts.Responses.Assessments.QuestionDto;
 global using AnswerOptionResponse = MentalHealthBar.Contracts.Responses.Assessments.AnswerOptionDto;
 
 global using MoodEntryResponse = MentalHealthBar.Contracts.Responses.MoodEntries.MoodEntryDto;
+global using MoodEntrySummaryResponse = MentalHealthBar.Contracts.Responses.MoodEntries.MoodEntrySummaryDto;
 global using MoodStatsResponse = MentalHealthBar.Contracts.Responses.MoodEntries.MoodStatsDto;
 
 global using HealthMetricResponse = MentalHealthBar.Contracts.Responses.HealthMetrics.HealthMetricDto;
+global using HealthMetricSummaryResponse = MentalHealthBar.Contracts.Responses.HealthMetrics.HealthMetricSummaryDto;
 
 global using EventLabelResponse = MentalHealthBar.Contracts.Responses.EventLabels.EventLabelDto;
 

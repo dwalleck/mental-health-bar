@@ -14,8 +14,8 @@ public class DashboardViewModel : ViewModelBase
     private const int RecentAssessmentLookbackDays = 30;
 
     private readonly IApiClient _apiClient;
-    private MoodEntryResponse? _recentMood;
-    private AssessmentResponse? _lastAssessment;
+    private MoodEntrySummaryResponse? _recentMood;
+    private AssessmentSummaryResponse? _lastAssessment;
     private ObservableCollection<string> _quickStats;
     private bool _isLoading;
 
@@ -33,13 +33,13 @@ public class DashboardViewModel : ViewModelBase
         _ = LoadDashboardData();
     }
 
-    public MoodEntryResponse? RecentMood
+    public MoodEntrySummaryResponse? RecentMood
     {
         get => _recentMood;
         set => this.RaiseAndSetIfChanged(ref _recentMood, value);
     }
 
-    public AssessmentResponse? LastAssessment
+    public AssessmentSummaryResponse? LastAssessment
     {
         get => _lastAssessment;
         set => this.RaiseAndSetIfChanged(ref _lastAssessment, value);
@@ -75,7 +75,7 @@ public class DashboardViewModel : ViewModelBase
                 endDate: DateTime.Now,
                 pageSize: 1);
 
-            RecentMood = moodHistory.FirstOrDefault();
+            RecentMood = moodHistory.Items.FirstOrDefault();
 
             if (RecentMood != null)
             {
@@ -93,7 +93,7 @@ public class DashboardViewModel : ViewModelBase
                 endDate: DateTime.Now,
                 pageSize: 1);
 
-            LastAssessment = assessmentHistory.FirstOrDefault();
+            LastAssessment = assessmentHistory.Items.FirstOrDefault();
 
             if (LastAssessment != null)
             {
@@ -122,10 +122,10 @@ public class DashboardViewModel : ViewModelBase
                 startDate: DateTime.Now.AddDays(-RecentMoodLookbackDays),
                 endDate: DateTime.Now);
 
-            if (healthMetrics.Any())
+            if (healthMetrics.Items.Any())
             {
-                var sleepMetrics = healthMetrics.Where(m => m.Type == "SleepHours").ToList();
-                var waterMetrics = healthMetrics.Where(m => m.Type == "WaterIntakeOz").ToList();
+                var sleepMetrics = healthMetrics.Items.Where(m => m.Type == "SleepHours").ToList();
+                var waterMetrics = healthMetrics.Items.Where(m => m.Type == "WaterIntakeOz").ToList();
 
                 if (sleepMetrics.Any())
                 {

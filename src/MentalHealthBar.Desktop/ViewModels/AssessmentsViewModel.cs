@@ -13,7 +13,7 @@ public class AssessmentsViewModel : ViewModelBase
 {
     private readonly IApiClient _apiClient;
     private ObservableCollection<AssessmentTemplateResponse> _templates;
-    private ObservableCollection<AssessmentResponse> _assessmentHistory;
+    private ObservableCollection<AssessmentSummaryResponse> _assessmentHistory;
     private AssessmentTemplateResponse? _selectedTemplate;
     private AssessmentTemplateResponse? _currentAssessment;
     private Dictionary<string, int> _currentResponses;
@@ -25,7 +25,7 @@ public class AssessmentsViewModel : ViewModelBase
     {
         _apiClient = apiClient;
         _templates = [];
-        _assessmentHistory = new ObservableCollection<AssessmentResponse>();
+        _assessmentHistory = new ObservableCollection<AssessmentSummaryResponse>();
         _currentResponses = new Dictionary<string, int>();
 
         // Commands
@@ -57,7 +57,7 @@ public class AssessmentsViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _templates, value);
     }
 
-    public ObservableCollection<AssessmentResponse> AssessmentHistory
+    public ObservableCollection<AssessmentSummaryResponse> AssessmentHistory
     {
         get => _assessmentHistory;
         set => this.RaiseAndSetIfChanged(ref _assessmentHistory, value);
@@ -147,7 +147,7 @@ public class AssessmentsViewModel : ViewModelBase
                 endDate: DateTime.Now);
 
             AssessmentHistory.Clear();
-            foreach (var assessment in history.OrderByDescending(a => a.CompletedAt))
+            foreach (var assessment in history.Items.OrderByDescending(a => a.CompletedAt))
             {
                 AssessmentHistory.Add(assessment);
             }
@@ -195,8 +195,16 @@ public class AssessmentsViewModel : ViewModelBase
 
             var result = await _apiClient.CompleteAssessmentAsync(request);
 
-            // Add to history
-            AssessmentHistory.Insert(0, result);
+            // Add to history (convert detail to summary)
+            var summary = new AssessmentSummaryResponse(
+                result.Id,
+                result.Type,
+                result.TotalScore,
+                result.Severity,
+                result.CompletedAt,
+                result.CreatedAt
+            );
+            AssessmentHistory.Insert(0, summary);
 
             // Reset assessment state
             CancelAssessment();
