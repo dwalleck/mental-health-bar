@@ -1,4 +1,5 @@
 using MediatR;
+using MentalHealthBar.Api.Infrastructure.Constants;
 using MentalHealthBar.Api.Infrastructure.Data;
 using MentalHealthBar.Contracts.Responses.EventLabels;
 using MentalHealthBar.Contracts.Responses.MoodEntries;
@@ -49,7 +50,7 @@ public class Handler(AppDbContext context) : IRequestHandler<Query, MoodPagedRes
         // - Fetch N+1 items to determine "has more" without full count
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var pageSize = Math.Clamp(request.PageSize, 1, 500);
+        var pageSize = Math.Clamp(request.PageSize, PaginationConstants.MoodEntriesMinPageSize, PaginationConstants.MoodEntriesMaxPageSize);
         var page = Math.Max(1, request.Page);
 
         // Include the junction table and EventLabels

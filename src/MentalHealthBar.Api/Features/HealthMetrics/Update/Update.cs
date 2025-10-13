@@ -61,13 +61,14 @@ public class Handler(AppDbContext context, IValidator<Command> validator) : IReq
         metric.Update(request.Value);
         await _context.SaveChangesAsync(cancellationToken);
 
+        // UpdatedAt is guaranteed to be set by the domain entity's Update() method
         return new HealthMetricDto(
             metric.Id,
             metric.Type.ToString(),
             metric.Value,
             metric.RecordedDate,
             metric.CreatedAt,
-            metric.UpdatedAt ?? SystemClock.Instance.GetCurrentInstant()
+            metric.UpdatedAt!.Value
         );
     }
 }

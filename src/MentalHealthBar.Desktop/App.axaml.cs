@@ -66,9 +66,13 @@ public partial class App : Application
 
     private void ConfigureServices(IServiceCollection services, HostBuilderContext context)
     {
-        // Get API base URL from configuration (environment-aware)
+        // Get API configuration (environment-aware)
         var apiBaseUrl = context.Configuration["ApiSettings:BaseUrl"]
             ?? throw new InvalidOperationException("ApiSettings:BaseUrl is not configured in appsettings.json");
+
+        var timeoutSeconds = int.TryParse(context.Configuration["ApiSettings:Timeout"], out var timeout) ? timeout : 30;
+        var maxRetryAttempts = int.TryParse(context.Configuration["ApiSettings:RetryPolicy:MaxRetryAttempts"], out var maxRetries) ? maxRetries : 3;
+        var backoffMultiplier = int.TryParse(context.Configuration["ApiSettings:RetryPolicy:BackoffMultiplier"], out var multiplier) ? multiplier : 2;
 
         // Configure HTTP Client with Polly retry policy
         // All HTTP client configuration is centralized here - ApiClient receives pre-configured client
@@ -76,10 +80,9 @@ public partial class App : Application
         {
             client.BaseAddress = new Uri(apiBaseUrl);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-            // Increased timeout to 30s to accommodate export operations with large datasets
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
         })
-        .AddPolicyHandler(GetRetryPolicy());
+        .AddPolicyHandler(GetRetryPolicy(maxRetryAttempts, backoffMultiplier));
 
         // Register Services
         services.AddSingleton<ChartingService>();
@@ -103,18 +106,18 @@ public partial class App : Application
         services.AddTransient<ExportView>();
     }
 
-    private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
+    private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(int maxRetryAttempts, int backoffMultiplier)
     {
         return HttpPolicyExtensions
             .HandleTransientHttpError()
             .OrResult(msg => !msg.IsSuccessStatusCode)
             .WaitAndRetryAsync(
-                3,
-                retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                maxRetryAttempts,
+                retryAttempt => TimeSpan.FromSeconds(Math.Pow(backoffMultiplier, retryAttempt)),
                 onRetry: (outcome, timespan, retryCount, context) =>
                 {
                     // Log retry attempts if logger is available
-                    Console.WriteLine($"Retry {retryCount} after {timespan.TotalMilliseconds}ms");
+                    Console.WriteLine($"Retry {retryCount}/{maxRetryAttempts} after {timespan.TotalMilliseconds}ms");
                 });
     }
 

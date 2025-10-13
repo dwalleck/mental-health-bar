@@ -64,12 +64,13 @@ public class Handler(AppDbContext context, IValidator<Command> validator) : IReq
         label.Update(request.Name, request.Description);
         await _context.SaveChangesAsync(cancellationToken);
 
+        // UpdatedAt is guaranteed to be set by the domain entity's Update() method
         return new EventLabelDto(
             label.Id,
             label.Name,
             label.Description,
             label.CreatedAt,
-            label.UpdatedAt ?? SystemClock.Instance.GetCurrentInstant()
+            label.UpdatedAt!.Value
         );
     }
 }

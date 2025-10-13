@@ -1,5 +1,6 @@
 using MediatR;
 using MentalHealthBar.Api.Domain.HealthMetrics;
+using MentalHealthBar.Api.Infrastructure.Constants;
 using MentalHealthBar.Api.Infrastructure.Data;
 using MentalHealthBar.Contracts.Responses.HealthMetrics;
 using Microsoft.EntityFrameworkCore;
@@ -49,7 +50,7 @@ public class Handler(AppDbContext context) : IRequestHandler<Query, HealthMetric
         // - Fetch N+1 items to determine "has more" without full count
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var pageSize = Math.Clamp(request.PageSize, 1, 365);
+        var pageSize = Math.Clamp(request.PageSize, PaginationConstants.HealthMetricsMinPageSize, PaginationConstants.HealthMetricsMaxPageSize);
         var page = Math.Max(1, request.Page);
 
         var items = await query
