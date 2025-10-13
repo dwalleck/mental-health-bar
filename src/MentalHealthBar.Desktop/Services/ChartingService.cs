@@ -69,31 +69,11 @@ public class ChartingService : IChartingService
             scatter.LineWidth = 2;
             scatter.MarkerSize = 8;
 
-            // Add hover tooltips (simulated with custom markers for now)
-            for (int i = 0; i < orderedEntries.Count; i++)
-            {
-                var entry = orderedEntries[i];
-                var tooltip = $"{entry.RecordedAt:yyyy-MM-dd HH:mm}\nMood: {entry.MoodScore}";
-
-                var tags = entry.EventLabels?.Select(e => e.Name).ToList();
-                if (tags?.Any() == true)
-                {
-                    tooltip += $"\nTags: {string.Join(", ", tags)}";
-                }
-
-                if (!string.IsNullOrWhiteSpace(entry.Notes))
-                {
-                    var truncatedNotes = entry.Notes.Length > 50
-                        ? entry.Notes.Substring(0, 47) + "..."
-                        : entry.Notes;
-                    tooltip += $"\nNotes: {truncatedNotes}";
-                }
-
-                // ScottPlot 5 has better tooltip support - for now we'll use markers
-                var marker = plot.Plot.Add.Marker(dates[i], scores[i]);
-                marker.Size = 10;
-                marker.Color = GetMoodColor(entry.MoodScore);
-            }
+            // Note: ScottPlot 5 provides built-in tooltip support via MouseMove events
+            // Instead of creating markers for each data point (which is inefficient for large datasets),
+            // consider implementing interactive tooltips using ScottPlot's event system:
+            // plot.MouseMove += (s, e) => { /* Find nearest point and show tooltip */ }
+            // For now, markers are colored by mood but tooltips should be implemented at the View level
         }
 
         // Configure axes

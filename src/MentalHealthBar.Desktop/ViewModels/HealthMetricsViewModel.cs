@@ -122,7 +122,7 @@ public class HealthMetricsViewModel : ViewModelBase
             {
                 // Update existing metric
                 var updateRequest = new UpdateHealthMetricRequest(Value: value);
-                var updated = await _apiClient.UpdateHealthMetricAsync(existing.Id, updateRequest);
+                var updated = await _apiClient.UpdateHealthMetricAsync(existing.Id, updateRequest, CancellationToken);
 
                 // Update in collection (convert to summary)
                 var index = RecentMetrics.IndexOf(existing);
@@ -145,7 +145,7 @@ public class HealthMetricsViewModel : ViewModelBase
                     RecordedDate: RecordedDate
                 );
 
-                var result = await _apiClient.RecordHealthMetricAsync(request);
+                var result = await _apiClient.RecordHealthMetricAsync(request, CancellationToken);
 
                 // Add to collection (convert to summary)
                 RecentMetrics.Insert(0, new HealthMetricSummaryResponse(
@@ -169,7 +169,7 @@ public class HealthMetricsViewModel : ViewModelBase
             IsLoading = false;
 
             // Clear status message after 3 seconds
-            await Task.Delay(3000);
+            await Task.Delay(3000, CancellationToken);
             StatusMessage = null;
         }
     }
@@ -182,7 +182,8 @@ public class HealthMetricsViewModel : ViewModelBase
 
             var metrics = await _apiClient.GetHealthMetricsHistoryAsync(
                 startDate: DateTime.Now.AddDays(-30),
-                endDate: DateTime.Now);
+                endDate: DateTime.Now,
+                cancellationToken: CancellationToken);
 
             RecentMetrics.Clear();
             foreach (var metric in metrics.Items.OrderByDescending(m => m.RecordedDate).ThenBy(m => m.Type))
@@ -208,7 +209,8 @@ public class HealthMetricsViewModel : ViewModelBase
             var dateTime = date.ToDateTime(TimeOnly.MinValue);
             var metrics = await _apiClient.GetHealthMetricsHistoryAsync(
                 startDate: dateTime,
-                endDate: dateTime);
+                endDate: dateTime,
+                cancellationToken: CancellationToken);
 
             // Update values if metrics exist for this date
             var sleepMetric = metrics.Items.FirstOrDefault(m => m.Type == "SleepHours");
@@ -236,7 +238,7 @@ public class HealthMetricsViewModel : ViewModelBase
             IsLoading = true;
             StatusMessage = "Deleting metric...";
 
-            await _apiClient.DeleteHealthMetricAsync(id);
+            await _apiClient.DeleteHealthMetricAsync(id, CancellationToken);
 
             // Remove from collection
             var toRemove = RecentMetrics.FirstOrDefault(m => m.Id == id);
@@ -257,7 +259,7 @@ public class HealthMetricsViewModel : ViewModelBase
             IsLoading = false;
 
             // Clear status message after 3 seconds
-            await Task.Delay(3000);
+            await Task.Delay(3000, CancellationToken);
             StatusMessage = null;
         }
     }

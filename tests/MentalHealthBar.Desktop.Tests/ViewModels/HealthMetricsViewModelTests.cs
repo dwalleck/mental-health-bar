@@ -57,14 +57,14 @@ public class HealthMetricsViewModelTests
                 It.Is<RecordHealthMetricRequest>(r =>
                     r.Type == "SleepHours" &&
                     r.Value == 7.5m),
-                default))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdMetric);
 
         // Act
         await _viewModel.SaveSleepCommand.Execute().FirstAsync();
 
         // Assert
-        _apiClientMock.Verify(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), default), Times.Once);
+        _apiClientMock.Verify(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), It.IsAny<CancellationToken>()), Times.Once);
         await Assert.That(_viewModel.RecentMetrics.Any(m => m.Id == createdMetric.Id)).IsTrue();
     }
 
@@ -96,14 +96,14 @@ public class HealthMetricsViewModelTests
         _apiClientMock.Setup(x => x.UpdateHealthMetricAsync(
                 existingMetric.Id,
                 It.Is<UpdateHealthMetricRequest>(r => r.Value == 8.5m),
-                default))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(updatedMetric);
 
         // Act
         await _viewModel.SaveSleepCommand.Execute().FirstAsync();
 
         // Assert
-        _apiClientMock.Verify(x => x.UpdateHealthMetricAsync(existingMetric.Id, It.IsAny<UpdateHealthMetricRequest>(), default), Times.Once);
+        _apiClientMock.Verify(x => x.UpdateHealthMetricAsync(existingMetric.Id, It.IsAny<UpdateHealthMetricRequest>(), It.IsAny<CancellationToken>()), Times.Once);
         await Assert.That(_viewModel.RecentMetrics[0].Value).IsEqualTo(8.5m);
     }
 
@@ -126,14 +126,14 @@ public class HealthMetricsViewModelTests
                 It.Is<RecordHealthMetricRequest>(r =>
                     r.Type == "WaterIntakeOz" &&
                     r.Value == 72m),
-                default))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdMetric);
 
         // Act
         await _viewModel.SaveWaterCommand.Execute().FirstAsync();
 
         // Assert
-        _apiClientMock.Verify(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), default), Times.Once);
+        _apiClientMock.Verify(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), It.IsAny<CancellationToken>()), Times.Once);
         await Assert.That(_viewModel.RecentMetrics.Any(m => m.Id == createdMetric.Id)).IsTrue();
     }
 
@@ -146,19 +146,19 @@ public class HealthMetricsViewModelTests
 
         _apiClientMock.Setup(x => x.RecordHealthMetricAsync(
                 It.Is<RecordHealthMetricRequest>(r => r.Type == "SleepHours"),
-                default))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricDto(Guid.NewGuid(), "SleepHours", 7.5m, DateOnly.FromDateTime(DateTime.Today), SystemClock.Instance.GetCurrentInstant(), null));
 
         _apiClientMock.Setup(x => x.RecordHealthMetricAsync(
                 It.Is<RecordHealthMetricRequest>(r => r.Type == "WaterIntakeOz"),
-                default))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricDto(Guid.NewGuid(), "WaterIntakeOz", 80m, DateOnly.FromDateTime(DateTime.Today), SystemClock.Instance.GetCurrentInstant(), null));
 
         // Act
         await _viewModel.SaveBothCommand.Execute().FirstAsync();
 
         // Assert
-        _apiClientMock.Verify(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), default), Times.Exactly(2));
+        _apiClientMock.Verify(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [Test]
@@ -201,7 +201,7 @@ public class HealthMetricsViewModelTests
         };
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricPagedResultDto(metrics, 3, 1, 365));
 
         // Act
@@ -228,7 +228,7 @@ public class HealthMetricsViewModelTests
                 null,
                 It.Is<DateTime?>(d => DateOnly.FromDateTime(d.Value) == targetDate),
                 It.Is<DateTime?>(d => DateOnly.FromDateTime(d.Value) == targetDate),
-                1, 365, default))
+                1, 365, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricPagedResultDto(metricsForDate, 2, 1, 365));
 
         // Act
@@ -255,14 +255,14 @@ public class HealthMetricsViewModelTests
 
         _viewModel.RecentMetrics.Add(metricToDelete);
 
-        _apiClientMock.Setup(x => x.DeleteHealthMetricAsync(metricToDelete.Id, default))
+        _apiClientMock.Setup(x => x.DeleteHealthMetricAsync(metricToDelete.Id, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
         await _viewModel.DeleteMetricCommand.Execute(metricToDelete.Id).FirstAsync();
 
         // Assert
-        _apiClientMock.Verify(x => x.DeleteHealthMetricAsync(metricToDelete.Id, default), Times.Once);
+        _apiClientMock.Verify(x => x.DeleteHealthMetricAsync(metricToDelete.Id, It.IsAny<CancellationToken>()), Times.Once);
         await Assert.That(_viewModel.RecentMetrics).DoesNotContain(metricToDelete);
     }
 
@@ -279,7 +279,7 @@ public class HealthMetricsViewModelTests
             null
         );
 
-        _apiClientMock.Setup(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), default))
+        _apiClientMock.Setup(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdMetric);
 
         // Act
@@ -294,7 +294,7 @@ public class HealthMetricsViewModelTests
     public async Task SaveMetric_OnError_ShowsErrorMessage()
     {
         // Arrange
-        _apiClientMock.Setup(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), default))
+        _apiClientMock.Setup(x => x.RecordHealthMetricAsync(It.IsAny<RecordHealthMetricRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("API error"));
 
         // Act

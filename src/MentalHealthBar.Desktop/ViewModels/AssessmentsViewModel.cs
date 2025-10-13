@@ -120,7 +120,7 @@ public class AssessmentsViewModel : ViewModelBase
         try
         {
             IsLoading = true;
-            var templates = await _apiClient.GetAssessmentTemplatesAsync();
+            var templates = await _apiClient.GetAssessmentTemplatesAsync(CancellationToken);
             Templates.Clear();
             foreach (var template in templates)
             {
@@ -145,7 +145,8 @@ public class AssessmentsViewModel : ViewModelBase
             IsLoading = true;
             var history = await _apiClient.GetAssessmentHistoryAsync(
                 startDate: DateTime.Now.AddMonths(-3),
-                endDate: DateTime.Now);
+                endDate: DateTime.Now,
+                cancellationToken: CancellationToken);
 
             AssessmentHistory.Clear();
             foreach (var assessment in history.Items.OrderByDescending(a => a.CompletedAt))
@@ -194,7 +195,7 @@ public class AssessmentsViewModel : ViewModelBase
                 Responses: CurrentResponses
             );
 
-            var result = await _apiClient.CompleteAssessmentAsync(request);
+            var result = await _apiClient.CompleteAssessmentAsync(request, CancellationToken);
 
             // Add to history (convert detail to summary)
             var summary = new AssessmentSummaryResponse(

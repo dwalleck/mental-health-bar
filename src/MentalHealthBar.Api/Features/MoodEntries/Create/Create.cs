@@ -21,28 +21,14 @@ public class Validator : AbstractValidator<Command>
 {
     public Validator()
     {
-        RuleFor(x => x.MoodScore)
-            .InclusiveBetween(1, 5)
-            .WithMessage("Mood score must be between 1 (Worst) and 5 (Best)");
+        // Only validate request-level concerns here
+        // Domain validation (score range, max tags, notes length, date validation) is handled by MoodEntry entity
 
-        RuleFor(x => x.EventLabelIds)
-            .Must(labelIds => labelIds == null || labelIds.Count <= 10)
-            .WithMessage("Maximum 10 event labels allowed per entry");
-
-        RuleFor(x => x.Notes)
-            .MaximumLength(500)
-            .WithMessage("Notes must not exceed 500 characters");
-
+        // Ensure RecordedAt is provided in UTC if specified
         RuleFor(x => x.RecordedAt)
-            .Must(recordedAt =>
-            {
-                if (!recordedAt.HasValue) return true;
-                var now = SystemClock.Instance.GetCurrentInstant();
-                var maxFutureInstant = now.Plus(Duration.FromDays(30));
-                var recordedInstant = Instant.FromDateTimeUtc(recordedAt.Value.ToUniversalTime());
-                return recordedInstant <= maxFutureInstant;
-            })
-            .WithMessage("RecordedAt cannot be more than 30 days in the future");
+            .Must(recordedAt => !recordedAt.HasValue || recordedAt.Value.Kind == DateTimeKind.Utc)
+            .When(x => x.RecordedAt.HasValue)
+            .WithMessage("RecordedAt must be in UTC format");
     }
 }
 
@@ -60,25 +46,31 @@ public class Handler(AppDbContext context, IValidator<Command> validator, ILogge
             throw new ValidationException(validationResult.Errors);
         }
 
-        var recordedAt = request.RecordedAt.HasValue
-            ? Instant.FromDateTimeUtc(request.RecordedAt.Value.ToUniversalTime())
-            : SystemClock.Instance.GetCurrentInstant();
-        var eventLabelIds = request.EventLabelIds ?? new List<Guid>();
+        try
+        {
+            var recordedAt = request.RecordedAt.HasValue
+                ? Instant.FromDateTimeUtc(request.RecordedAt.Value.ToUniversalTime())
+                : SystemClock.Instance.GetCurrentInstant();
+            var eventLabelIds = request.EventLabelIds ?? new List<Guid>();
 
-        _logger.LogInformation("Creating MoodEntry with {Count} EventLabelIds: {Ids}",
-            eventLabelIds.Count, string.Join(", ", eventLabelIds));
+            // Validate recordedAt at domain level
+            MoodEntry.ValidateRecordedAt(recordedAt);
 
-        var entry = new MoodEntry(
-            request.MoodScore,
-            recordedAt,
-            eventLabelIds,
-            request.Notes
-        );
+            _logger.LogInformation("Creating MoodEntry with {Count} EventLabelIds: {Ids}",
+                eventLabelIds.Count, string.Join(", ", eventLabelIds));
 
-        _context.MoodEntries.Add(entry);
-        await _context.SaveChangesAsync(cancellationToken);
+            // Domain entity will validate business rules (score range, max tags, notes length)
+            var entry = new MoodEntry(
+                request.MoodScore,
+                recordedAt,
+                eventLabelIds,
+                request.Notes
+            );
 
-        _logger.LogInformation("MoodEntry saved with ID: {Id}", entry.Id);
+            _context.MoodEntries.Add(entry);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("MoodEntry saved with ID: {Id}", entry.Id);
 
         // Load the entry with EventLabels via the junction table
         var savedEntry = await _context.MoodEntries
@@ -100,15 +92,32 @@ public class Handler(AppDbContext context, IValidator<Command> validator, ILogge
                 mel.EventLabel.UpdatedAt))
             .ToList();
 
-        return new MoodEntryDto(
-            savedEntry.Id,
-            savedEntry.MoodScore,
-            savedEntry.RecordedAt,
-            eventLabels,
-            savedEntry.Notes,
-            savedEntry.CreatedAt,
-            null
-        );
+            return new MoodEntryDto(
+                savedEntry.Id,
+                savedEntry.MoodScore,
+                savedEntry.RecordedAt,
+                eventLabels,
+                savedEntry.Notes,
+                savedEntry.CreatedAt,
+                null
+            );
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            // Domain validation failed - convert to FluentValidation exception for consistent error handling
+            throw new ValidationException(new[]
+            {
+                new FluentValidation.Results.ValidationFailure(ex.ParamName ?? "Value", ex.Message)
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            // Domain validation failed - convert to FluentValidation exception for consistent error handling
+            throw new ValidationException(new[]
+            {
+                new FluentValidation.Results.ValidationFailure(ex.ParamName ?? "Value", ex.Message)
+            });
+        }
     }
 }
 

@@ -142,7 +142,8 @@ public class DataVisualizationViewModel : ViewModelBase
             var moodEntries = await _apiClient.GetMoodHistoryAsync(
                 startDate: startDate,
                 endDate: endDate,
-                pageSize: 500);
+                pageSize: 500,
+                cancellationToken: CancellationToken);
 
             MoodChart = _chartingService.CreateMoodChart(moodEntries.Items, ShowDailyAverage);
         }
@@ -166,7 +167,8 @@ public class DataVisualizationViewModel : ViewModelBase
             var assessments = await _apiClient.GetAssessmentHistoryAsync(
                 type: SelectedAssessmentType,
                 startDate: startDate,
-                endDate: endDate);
+                endDate: endDate,
+                cancellationToken: CancellationToken);
 
             AssessmentChart = _chartingService.CreateAssessmentChart(assessments.Items, SelectedAssessmentType);
         }
@@ -190,7 +192,8 @@ public class DataVisualizationViewModel : ViewModelBase
             var healthMetrics = await _apiClient.GetHealthMetricsHistoryAsync(
                 startDate: startDate,
                 endDate: endDate,
-                pageSize: 365);
+                pageSize: 365,
+                cancellationToken: CancellationToken);
 
             var sleepMetrics = healthMetrics.Items.Where(m => m.Type == "SleepHours").ToList();
             var waterMetrics = healthMetrics.Items.Where(m => m.Type == "WaterIntakeOz").ToList();

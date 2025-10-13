@@ -48,7 +48,7 @@ public class AssessmentsViewModelTests
             new(Guid.NewGuid(), "BDI", "Beck Depression", "Depression inventory", new List<QuestionResponse>(), new ScoringRulesDto(0, 63, new Dictionary<string, string>()))
         };
 
-        _apiClientMock.Setup(x => x.GetAssessmentTemplatesAsync(default))
+        _apiClientMock.Setup(x => x.GetAssessmentTemplatesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(templates);
 
         // Act
@@ -72,7 +72,7 @@ public class AssessmentsViewModelTests
         };
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AssessmentPagedResultDto(
                 history,
                 3, 1, 100));
@@ -229,14 +229,14 @@ public class AssessmentsViewModelTests
                     r.Type == "PHQ9" &&
                     r.Responses["Q1"] == 2 &&
                     r.Responses["Q2"] == 3),
-                default))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(completedAssessment);
 
         // Act
         await _viewModel.SubmitAssessmentCommand.Execute().FirstAsync();
 
         // Assert
-        _apiClientMock.Verify(x => x.CompleteAssessmentAsync(It.IsAny<CompleteAssessmentRequest>(), default), Times.Once);
+        _apiClientMock.Verify(x => x.CompleteAssessmentAsync(It.IsAny<CompleteAssessmentRequest>(), It.IsAny<CancellationToken>()), Times.Once);
         await Assert.That(_viewModel.AssessmentHistory.Count).IsEqualTo(1);
         await Assert.That(_viewModel.AssessmentHistory[0].Type).IsEqualTo("PHQ9");
         await Assert.That(_viewModel.AssessmentHistory[0].TotalScore).IsEqualTo(5);
@@ -331,7 +331,7 @@ public class AssessmentsViewModelTests
     public async Task LoadTemplates_HandlesApiError()
     {
         // Arrange
-        _apiClientMock.Setup(x => x.GetAssessmentTemplatesAsync(default))
+        _apiClientMock.Setup(x => x.GetAssessmentTemplatesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Network error"));
 
         // Act

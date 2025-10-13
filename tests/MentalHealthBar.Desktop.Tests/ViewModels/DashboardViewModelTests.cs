@@ -42,23 +42,23 @@ public class DashboardViewModelTests
         );
 
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodPagedResultDto(
                 new List<MoodEntrySummaryDto> { expectedMood },
                 1, 1, 1));
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AssessmentPagedResultDto(
                 new List<AssessmentSummaryDto>(),
                 0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetMoodStatsAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodStatsDto(5, 3.5, 4, new Dictionary<int, int>()));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricPagedResultDto(
                 new List<HealthMetricSummaryDto>(),
                 0, 1, 365));
@@ -78,23 +78,23 @@ public class DashboardViewModelTests
     {
         // Arrange
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodPagedResultDto(
                 new List<MoodEntrySummaryDto>(),
                 0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AssessmentPagedResultDto(
                 new List<AssessmentSummaryDto>(),
                 0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetMoodStatsAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodStatsDto(0, 0, 0, new Dictionary<int, int>()));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricPagedResultDto(
                 new List<HealthMetricSummaryDto>(),
                 0, 1, 365));
@@ -121,23 +121,23 @@ public class DashboardViewModelTests
         );
 
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodPagedResultDto(
                 new List<MoodEntrySummaryDto>(),
                 0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AssessmentPagedResultDto(
                 new List<AssessmentSummaryDto> { expectedAssessment },
                 1, 1, 1));
 
         _apiClientMock.Setup(x => x.GetMoodStatsAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodStatsDto(0, 0, 0, new Dictionary<int, int>()));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricPagedResultDto(
                 new List<HealthMetricSummaryDto>(),
                 0, 1, 365));
@@ -166,23 +166,23 @@ public class DashboardViewModelTests
         };
 
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodPagedResultDto(
                 new List<MoodEntrySummaryDto>(),
                 0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AssessmentPagedResultDto(
                 new List<AssessmentSummaryDto>(),
                 0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetMoodStatsAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodStatsDto(0, 0, 0, new Dictionary<int, int>()));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricPagedResultDto(
                 healthMetrics,
                 4, 1, 365));
@@ -200,7 +200,7 @@ public class DashboardViewModelTests
     {
         // Arrange
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("API connection failed"));
 
         // Act
@@ -228,21 +228,21 @@ public class DashboardViewModelTests
         // Arrange
         var tcs = new TaskCompletionSource<MoodPagedResultDto>();
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 1, It.IsAny<CancellationToken>()))
             .Returns(tcs.Task);
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AssessmentPagedResultDto(
                 new List<AssessmentSummaryDto>(),
                 0, 1, 1));
 
         _apiClientMock.Setup(x => x.GetMoodStatsAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodStatsDto(0, 0, 0, new Dictionary<int, int>()));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricPagedResultDto(
                 new List<HealthMetricSummaryDto>(),
                 0, 1, 365));

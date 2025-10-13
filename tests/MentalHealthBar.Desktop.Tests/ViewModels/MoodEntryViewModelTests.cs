@@ -80,14 +80,14 @@ public class MoodEntryViewModelTests
                     r.MoodScore == 4 &&
                     r.Notes == "Feeling good today" &&
                     r.EventLabelIds.Count == 2),
-                default))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(savedResponse);
 
         // Act
         await _viewModel.SaveCommand.Execute().FirstAsync();
 
         // Assert
-        _apiClientMock.Verify(x => x.CreateMoodEntryAsync(It.IsAny<CreateMoodEntryRequest>(), default), Times.Once);
+        _apiClientMock.Verify(x => x.CreateMoodEntryAsync(It.IsAny<CreateMoodEntryRequest>(), It.IsAny<CancellationToken>()), Times.Once);
         await Assert.That(_viewModel.MoodScore).IsEqualTo(3); // Reset to default
         await Assert.That(_viewModel.Notes).IsEmpty();
         await Assert.That(_viewModel.SelectedTags.Count).IsEqualTo(0);
@@ -130,7 +130,7 @@ public class MoodEntryViewModelTests
             new(Guid.NewGuid(), "family", null, SystemClock.Instance.GetCurrentInstant(), null)
         };
 
-        _apiClientMock.Setup(x => x.GetEventLabelsAsync(null, default))
+        _apiClientMock.Setup(x => x.GetEventLabelsAsync(null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(labels);
 
         // Act
@@ -209,14 +209,14 @@ public class MoodEntryViewModelTests
 
         _apiClientMock.Setup(x => x.CreateEventLabelAsync(
                 It.Is<CreateEventLabelRequest>(r => r.Name == "meditation"),
-                default))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdLabel);
 
         // Act
         await _viewModel.CreateNewLabelCommand.Execute().FirstAsync();
 
         // Assert
-        _apiClientMock.Verify(x => x.CreateEventLabelAsync(It.IsAny<CreateEventLabelRequest>(), default), Times.Once);
+        _apiClientMock.Verify(x => x.CreateEventLabelAsync(It.IsAny<CreateEventLabelRequest>(), It.IsAny<CancellationToken>()), Times.Once);
         await Assert.That(_viewModel.AvailableLabels).Contains(createdLabel);
         await Assert.That(_viewModel.SelectedTags).Contains("meditation");
         await Assert.That(_viewModel.NewTag).IsEmpty(); // Should be cleared
@@ -265,7 +265,7 @@ public class MoodEntryViewModelTests
     public async Task SaveCommand_HandlesApiError()
     {
         // Arrange
-        _apiClientMock.Setup(x => x.CreateMoodEntryAsync(It.IsAny<CreateMoodEntryRequest>(), default))
+        _apiClientMock.Setup(x => x.CreateMoodEntryAsync(It.IsAny<CreateMoodEntryRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Network error"));
 
         // Act - Should not throw, error should be handled

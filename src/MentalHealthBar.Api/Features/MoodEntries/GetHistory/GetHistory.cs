@@ -42,6 +42,11 @@ public class Handler(AppDbContext context) : IRequestHandler<Query, MoodPagedRes
             query = query.Where(m => m.MoodEntryEventLabels.Any(mel => mel.EventLabelId == request.EventLabelId.Value));
         }
 
+        // Pagination: Using separate CountAsync() and Skip().Take() queries
+        // This is acceptable for current scope and typical dataset sizes
+        // For very large datasets (millions of records), consider:
+        // - Cursor-based pagination (using ID or timestamp as cursor)
+        // - Fetch N+1 items to determine "has more" without full count
         var totalCount = await query.CountAsync(cancellationToken);
 
         var pageSize = Math.Clamp(request.PageSize, 1, 500);

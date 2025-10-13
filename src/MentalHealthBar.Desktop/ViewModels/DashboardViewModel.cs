@@ -73,7 +73,8 @@ public class DashboardViewModel : ViewModelBase
             var moodHistory = await _apiClient.GetMoodHistoryAsync(
                 startDate: DateTime.Now.AddDays(-RecentMoodLookbackDays),
                 endDate: DateTime.Now,
-                pageSize: 1);
+                pageSize: 1,
+                cancellationToken: CancellationToken);
 
             RecentMood = moodHistory.Items.FirstOrDefault();
 
@@ -91,7 +92,8 @@ public class DashboardViewModel : ViewModelBase
             var assessmentHistory = await _apiClient.GetAssessmentHistoryAsync(
                 startDate: DateTime.Now.AddDays(-RecentAssessmentLookbackDays),
                 endDate: DateTime.Now,
-                pageSize: 1);
+                pageSize: 1,
+                cancellationToken: CancellationToken);
 
             LastAssessment = assessmentHistory.Items.FirstOrDefault();
 
@@ -109,7 +111,8 @@ public class DashboardViewModel : ViewModelBase
             // Load mood statistics for the week
             var moodStats = await _apiClient.GetMoodStatsAsync(
                 startDate: DateTime.Now.AddDays(-RecentMoodLookbackDays),
-                endDate: DateTime.Now);
+                endDate: DateTime.Now,
+                cancellationToken: CancellationToken);
 
             if (moodStats != null && moodStats.Count > 0)
             {
@@ -120,7 +123,8 @@ public class DashboardViewModel : ViewModelBase
             // Load health metrics summary
             var healthMetrics = await _apiClient.GetHealthMetricsHistoryAsync(
                 startDate: DateTime.Now.AddDays(-RecentMoodLookbackDays),
-                endDate: DateTime.Now);
+                endDate: DateTime.Now,
+                cancellationToken: CancellationToken);
 
             if (healthMetrics.Items.Any())
             {

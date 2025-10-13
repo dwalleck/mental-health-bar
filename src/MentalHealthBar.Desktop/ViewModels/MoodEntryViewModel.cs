@@ -127,7 +127,7 @@ public class MoodEntryViewModel : ViewModelBase
                 Notes: string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim()
             );
 
-            var result = await _apiClient.CreateMoodEntryAsync(request);
+            var result = await _apiClient.CreateMoodEntryAsync(request, CancellationToken);
 
             // TODO: Show success message
             Console.WriteLine($"Mood entry saved with ID: {result.Id}");
@@ -150,7 +150,7 @@ public class MoodEntryViewModel : ViewModelBase
     {
         try
         {
-            var labels = await _apiClient.GetEventLabelsAsync();
+            var labels = await _apiClient.GetEventLabelsAsync(cancellationToken: CancellationToken);
             AvailableLabels.Clear();
             foreach (var label in labels.OrderBy(l => l.Name))
             {
@@ -190,7 +190,7 @@ public class MoodEntryViewModel : ViewModelBase
                 Description: null
             );
 
-            var result = await _apiClient.CreateEventLabelAsync(request);
+            var result = await _apiClient.CreateEventLabelAsync(request, CancellationToken);
 
             // Add to available labels
             AvailableLabels.Add(result);

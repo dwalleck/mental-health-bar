@@ -55,7 +55,7 @@ public class DataVisualizationViewModelTests
         };
 
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodPagedResultDto(moodEntries, 2, 1, 500));
 
         var expectedChart = new AvaPlot();
@@ -85,7 +85,7 @@ public class DataVisualizationViewModelTests
         };
 
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodPagedResultDto(moodEntries, 1, 1, 500));
 
         _chartingServiceMock.Setup(x => x.CreateMoodChart(It.IsAny<List<MoodEntrySummaryDto>>(), true))
@@ -113,7 +113,7 @@ public class DataVisualizationViewModelTests
         };
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
-                "PHQ9", It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, default))
+                "PHQ9", It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AssessmentPagedResultDto(assessments, 2, 1, 100));
 
         var expectedChart = new AvaPlot();
@@ -125,7 +125,7 @@ public class DataVisualizationViewModelTests
 
         // Assert
         _apiClientMock.Verify(x => x.GetAssessmentHistoryAsync(
-            "PHQ9", It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, default), Times.AtLeastOnce);
+            "PHQ9", It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         _chartingServiceMock.Verify(x => x.CreateAssessmentChart(
             It.Is<List<AssessmentSummaryDto>>(list => list.Count == 2),
             "PHQ9"), Times.AtLeastOnce);
@@ -144,7 +144,7 @@ public class DataVisualizationViewModelTests
         };
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricPagedResultDto(healthMetrics, 3, 1, 365));
 
         var expectedChart = new AvaPlot();
@@ -168,15 +168,15 @@ public class DataVisualizationViewModelTests
     {
         // Arrange
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodPagedResultDto(new List<MoodEntrySummaryDto>(), 0, 1, 500));
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
-                It.IsAny<string>(), It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, default))
+                It.IsAny<string>(), It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AssessmentPagedResultDto(new List<AssessmentSummaryDto>(), 0, 1, 100));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricPagedResultDto(new List<HealthMetricSummaryDto>(), 0, 1, 365));
 
         _chartingServiceMock.Setup(x => x.CreateMoodChart(It.IsAny<List<MoodEntrySummaryDto>>(), It.IsAny<bool>()))
@@ -194,7 +194,7 @@ public class DataVisualizationViewModelTests
         // Assert
         _apiClientMock.Verify(x => x.GetMoodHistoryAsync(
             It.Is<DateTime?>(d => d.Value >= DateTime.Now.AddDays(-8)),
-            It.IsAny<DateTime?>(), null, 1, 500, default), Times.AtLeastOnce);
+            It.IsAny<DateTime?>(), null, 1, 500, It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
     [Test]
@@ -202,7 +202,7 @@ public class DataVisualizationViewModelTests
     {
         // Arrange
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
-                It.IsAny<string>(), It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, default))
+                It.IsAny<string>(), It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AssessmentPagedResultDto(new List<AssessmentSummaryDto>(), 0, 1, 100));
 
         _chartingServiceMock.Setup(x => x.CreateAssessmentChart(It.IsAny<List<AssessmentSummaryDto>>(), It.IsAny<string>()))
@@ -215,10 +215,10 @@ public class DataVisualizationViewModelTests
 
         // Assert
         _apiClientMock.Verify(x => x.GetAssessmentHistoryAsync(
-            "GAD7", It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, default), Times.AtLeastOnce);
+            "GAD7", It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         // Should not refresh mood or health charts
         _apiClientMock.Verify(x => x.GetMoodHistoryAsync(
-            It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, default), Times.Never);
+            It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
@@ -246,15 +246,15 @@ public class DataVisualizationViewModelTests
     {
         // Arrange
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MoodPagedResultDto(new List<MoodEntrySummaryDto>(), 0, 1, 500));
 
         _apiClientMock.Setup(x => x.GetAssessmentHistoryAsync(
-                It.IsAny<string>(), It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, default))
+                It.IsAny<string>(), It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 100, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AssessmentPagedResultDto(new List<AssessmentSummaryDto>(), 0, 1, 100));
 
         _apiClientMock.Setup(x => x.GetHealthMetricsHistoryAsync(
-                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, default))
+                null, It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), 1, 365, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HealthMetricPagedResultDto(new List<HealthMetricSummaryDto>(), 0, 1, 365));
 
         _chartingServiceMock.Setup(x => x.CreateMoodChart(It.IsAny<List<MoodEntrySummaryDto>>(), It.IsAny<bool>()))
@@ -278,7 +278,7 @@ public class DataVisualizationViewModelTests
     {
         // Arrange
         _apiClientMock.Setup(x => x.GetMoodHistoryAsync(
-                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, default))
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), null, 1, 500, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Network error"));
 
         // Act

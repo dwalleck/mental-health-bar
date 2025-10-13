@@ -135,13 +135,13 @@ public class ExportViewModel : ViewModelBase
 
             if (SelectedFormat == ExportFormat.CSV)
             {
-                data = await _apiClient.ExportToCsvAsync(request);
+                data = await _apiClient.ExportToCsvAsync(request, CancellationToken);
                 extension = "csv";
                 mimeType = "text/csv";
             }
             else
             {
-                var jsonString = await _apiClient.ExportToJsonAsync(request);
+                var jsonString = await _apiClient.ExportToJsonAsync(request, CancellationToken);
                 data = System.Text.Encoding.UTF8.GetBytes(jsonString);
                 extension = "json";
                 mimeType = "application/json";
@@ -172,7 +172,7 @@ public class ExportViewModel : ViewModelBase
                 if (file != null)
                 {
                     await using var stream = await file.OpenWriteAsync();
-                    await stream.WriteAsync(data, 0, data.Length);
+                    await stream.WriteAsync(data, 0, data.Length, CancellationToken);
 
                     ExportProgress = 100;
                     StatusMessage = $"Export completed successfully! File saved as {file.Name}";
@@ -192,7 +192,7 @@ public class ExportViewModel : ViewModelBase
                 var fileName = $"mental-health-export-{DateTime.Now:yyyy-MM-dd-HHmmss}.{extension}";
                 var filePath = Path.Combine(downloadsPath, fileName);
 
-                await File.WriteAllBytesAsync(filePath, data);
+                await File.WriteAllBytesAsync(filePath, data, CancellationToken);
 
                 ExportProgress = 100;
                 StatusMessage = $"Export completed! File saved to: {filePath}";
@@ -208,7 +208,7 @@ public class ExportViewModel : ViewModelBase
             IsExporting = false;
 
             // Clear status message after 5 seconds
-            await Task.Delay(5000);
+            await Task.Delay(5000, CancellationToken);
             if (StatusMessage?.StartsWith("Export completed") == true ||
                 StatusMessage?.StartsWith("Export cancelled") == true)
             {

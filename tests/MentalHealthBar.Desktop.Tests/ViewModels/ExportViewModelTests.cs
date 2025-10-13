@@ -59,7 +59,7 @@ public class ExportViewModelTests
                     r.IncludeAssessments &&
                     r.IncludeMoodEntries &&
                     r.IncludeHealthMetrics),
-                default))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(csvData);
 
         var mockFile = new Mock<IStorageFile>();
@@ -74,7 +74,7 @@ public class ExportViewModelTests
         await _viewModel.ExportCommand.Execute().FirstAsync();
 
         // Assert
-        _apiClientMock.Verify(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), default), Times.Once);
+        _apiClientMock.Verify(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()), Times.Once);
         await Assert.That(mockStream.ToArray()).IsEqualTo(csvData);
         await Assert.That(_viewModel.ExportProgress).IsEqualTo(100);
         await Assert.That(_viewModel.StatusMessage).Contains("completed successfully");
@@ -87,7 +87,7 @@ public class ExportViewModelTests
         _viewModel.SelectedFormat = ExportFormat.JSON;
         var jsonString = "{\"data\":\"test\"}";
 
-        _apiClientMock.Setup(x => x.ExportToJsonAsync(It.IsAny<ExportRequest>(), default))
+        _apiClientMock.Setup(x => x.ExportToJsonAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(jsonString);
 
         var mockFile = new Mock<IStorageFile>();
@@ -102,7 +102,7 @@ public class ExportViewModelTests
         await _viewModel.ExportCommand.Execute().FirstAsync();
 
         // Assert
-        _apiClientMock.Verify(x => x.ExportToJsonAsync(It.IsAny<ExportRequest>(), default), Times.Once);
+        _apiClientMock.Verify(x => x.ExportToJsonAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()), Times.Once);
         var writtenData = Encoding.UTF8.GetString(mockStream.ToArray());
         await Assert.That(writtenData).IsEqualTo(jsonString);
     }
@@ -111,7 +111,7 @@ public class ExportViewModelTests
     public async Task ExportCommand_UserCancelsFileSave_ShowsCancelMessage()
     {
         // Arrange
-        _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), default))
+        _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new byte[] { 1, 2, 3 });
 
         _storageProviderMock.Setup(x => x.SaveFilePickerAsync(It.IsAny<FilePickerSaveOptions>()))
@@ -197,7 +197,7 @@ public class ExportViewModelTests
     {
         // Arrange
         var tcs = new TaskCompletionSource<byte[]>();
-        _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), default))
+        _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()))
             .Returns(tcs.Task);
 
         var mockFile = new Mock<IStorageFile>();
@@ -225,7 +225,7 @@ public class ExportViewModelTests
     public async Task Export_HandlesApiError()
     {
         // Arrange
-        _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), default))
+        _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Network error"));
 
         // Act
@@ -244,7 +244,7 @@ public class ExportViewModelTests
         _viewModel.SelectedFormat = ExportFormat.CSV;
 
         var csvData = Encoding.UTF8.GetBytes("test,data");
-        _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), default))
+        _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(csvData);
 
         // Act
@@ -260,7 +260,7 @@ public class ExportViewModelTests
     {
         // Arrange
         var csvData = new byte[] { 1, 2, 3 };
-        _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), default))
+        _apiClientMock.Setup(x => x.ExportToCsvAsync(It.IsAny<ExportRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(csvData);
 
         var mockFile = new Mock<IStorageFile>();
