@@ -29,9 +29,15 @@ public class DashboardViewModel : ViewModelBase
         ViewTrendsCommand = ReactiveCommand.CreateFromTask(NavigateToTrends);
         RefreshCommand = ReactiveCommand.CreateFromTask(LoadDashboardData);
 
-        // Load data on creation
-        _ = LoadDashboardData();
+        // Initialize data - Views should call InitializeAsync() or subscribe to RefreshCommand on load
+        // Removed fire-and-forget initialization to prevent unhandled exceptions
     }
+
+    /// <summary>
+    /// Initializes the dashboard by loading all data.
+    /// Should be called by the View when it's activated/loaded.
+    /// </summary>
+    public Task InitializeAsync() => LoadDashboardData();
 
     public MoodEntrySummaryResponse? RecentMood
     {

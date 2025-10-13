@@ -40,9 +40,15 @@ public class HealthMetricsViewModel : ViewModelBase
         LoadRecentMetricsCommand = ReactiveCommand.CreateFromTask(LoadRecentMetrics);
         DeleteMetricCommand = ReactiveCommand.CreateFromTask<Guid>(DeleteMetric);
 
-        // Load recent metrics on creation
-        _ = LoadRecentMetrics();
+        // Initialize data - Views should call InitializeAsync() on load
+        // Removed fire-and-forget initialization to prevent unhandled exceptions
     }
+
+    /// <summary>
+    /// Initializes the health metrics view by loading recent metrics.
+    /// Should be called by the View when it's activated/loaded.
+    /// </summary>
+    public Task InitializeAsync() => LoadRecentMetrics();
 
     public decimal SleepHours
     {
@@ -62,6 +68,8 @@ public class HealthMetricsViewModel : ViewModelBase
         set
         {
             this.RaiseAndSetIfChanged(ref _recordedDate, value);
+            // Load metrics for the selected date
+            // Fire-and-forget is acceptable here as it's UI-triggered and exceptions are handled in LoadMetricsForDate
             _ = LoadMetricsForDate(value);
         }
     }

@@ -44,12 +44,18 @@ public class AssessmentsViewModel : ViewModelBase
             this.WhenAnyValue(x => x.CurrentQuestionIndex, index => index > 0));
         CancelAssessmentCommand = ReactiveCommand.Create(CancelAssessment);
 
-        // Load data on creation
-        _ = Task.Run(async () =>
-        {
-            await LoadTemplates();
-            await LoadAssessmentHistory();
-        });
+        // Initialize data - Views should call InitializeAsync() or subscribe to LoadTemplatesCommand/LoadHistoryCommand on load
+        // Removed fire-and-forget initialization to prevent unhandled exceptions
+    }
+
+    /// <summary>
+    /// Initializes the assessments view by loading templates and history.
+    /// Should be called by the View when it's activated/loaded.
+    /// </summary>
+    public async Task InitializeAsync()
+    {
+        await LoadTemplates();
+        await LoadAssessmentHistory();
     }
 
     public ObservableCollection<AssessmentTemplateResponse> Templates

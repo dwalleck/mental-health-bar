@@ -41,9 +41,15 @@ public class MoodEntryViewModel : ViewModelBase
             this.WhenAnyValue(x => x.NewTag, tag => !string.IsNullOrWhiteSpace(tag)));
         ResetCommand = ReactiveCommand.Create(Reset);
 
-        // Load available labels on creation
-        _ = LoadEventLabels();
+        // Initialize data - Views should call InitializeAsync() on load
+        // Removed fire-and-forget initialization to prevent unhandled exceptions
     }
+
+    /// <summary>
+    /// Initializes the mood entry view by loading available event labels.
+    /// Should be called by the View when it's activated/loaded.
+    /// </summary>
+    public Task InitializeAsync() => LoadEventLabels();
 
     public int MoodScore
     {
