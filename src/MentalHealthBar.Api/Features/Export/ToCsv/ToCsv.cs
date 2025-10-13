@@ -27,6 +27,33 @@ public class Handler : IRequestHandler<Command, ExportResult>
         _context = context;
     }
 
+    /// <summary>
+    /// Properly escapes a CSV field value by:
+    /// 1. Replacing quotes with double quotes
+    /// 2. Removing/replacing newlines and carriage returns
+    /// 3. Wrapping in quotes if the value contains special characters
+    /// </summary>
+    private static string EscapeCsvField(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+
+        // Replace problematic characters
+        var escaped = value
+            .Replace("\"", "\"\"")  // Escape quotes by doubling them
+            .Replace("\r\n", " ")   // Replace CRLF with space
+            .Replace("\n", " ")     // Replace LF with space
+            .Replace("\r", " ");    // Replace CR with space
+
+        // Wrap in quotes if contains comma, quote, or was modified
+        if (escaped.Contains(',') || escaped.Contains('"') || escaped != value)
+        {
+            return $"\"{escaped}\"";
+        }
+
+        return escaped;
+    }
+
     public async Task<ExportResult> Handle(Command request, CancellationToken cancellationToken)
     {
         // Validate date range
@@ -89,9 +116,9 @@ public class Handler : IRequestHandler<Command, ExportResult>
                 var eventLabelNames = entry.MoodEntryEventLabels
                     .Select(mel => mel.EventLabel.Name)
                     .ToList();
-                var labels = string.Join(";", eventLabelNames);
-                var notes = entry.Notes?.Replace("\"", "\"\"").Replace("\n", " ") ?? "";
-                csv.AppendLine($"{entry.Id},{entry.MoodScore},{entry.RecordedAt:O},\"{labels}\",\"{notes}\",{entry.CreatedAt:O}");
+                var labels = EscapeCsvField(string.Join(";", eventLabelNames));
+                var notes = EscapeCsvField(entry.Notes);
+                csv.AppendLine($"{entry.Id},{entry.MoodScore},{entry.RecordedAt:O},{labels},{notes},{entry.CreatedAt:O}");
             }
             csv.AppendLine();
         }
