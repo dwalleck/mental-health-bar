@@ -3,6 +3,7 @@ using MediatR;
 using MentalHealthBar.Api.Infrastructure.Data;
 using MentalHealthBar.Contracts.Responses.EventLabels;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Features.EventLabels.Update;
 
@@ -68,7 +69,7 @@ public class Handler(AppDbContext context, IValidator<Command> validator) : IReq
             label.Name,
             label.Description,
             label.CreatedAt,
-            label.UpdatedAt ?? DateTimeOffset.UtcNow
+            label.UpdatedAt ?? SystemClock.Instance.GetCurrentInstant()
         );
     }
 }

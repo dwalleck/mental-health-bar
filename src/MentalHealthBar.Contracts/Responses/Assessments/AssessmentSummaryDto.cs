@@ -1,3 +1,5 @@
+using NodaTime;
+
 namespace MentalHealthBar.Contracts.Responses.Assessments;
 
 public record AssessmentSummaryDto(
@@ -5,6 +7,6 @@ public record AssessmentSummaryDto(
     string Type,
     int TotalScore,
     string Severity,
-    DateTimeOffset CompletedAt,
-    DateTimeOffset CreatedAt
+    Instant CompletedAt,
+    Instant CreatedAt
 );

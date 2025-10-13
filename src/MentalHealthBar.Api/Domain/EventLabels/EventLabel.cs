@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using MassTransit;
 using MentalHealthBar.Api.Domain.MoodEntries;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Domain.EventLabels;
 
@@ -15,10 +16,10 @@ public partial class EventLabel
     public Guid Id { get; init; }
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
-    public DateTimeOffset CreatedAt { get; init; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public Instant CreatedAt { get; init; }
+    public Instant? UpdatedAt { get; set; }
     public bool IsDeleted { get; set; }
-    public DateTimeOffset? DeletedAt { get; set; }
+    public Instant? DeletedAt { get; set; }
 
     // Navigation property for many-to-many relationship
     public ICollection<MoodEntryEventLabel> MoodEntryEventLabels { get; set; } = new List<MoodEntryEventLabel>();
@@ -28,7 +29,7 @@ public partial class EventLabel
     public EventLabel(string name, string? description = null)
     {
         Id = NewId.NextSequentialGuid();
-        CreatedAt = DateTimeOffset.UtcNow;
+        CreatedAt = SystemClock.Instance.GetCurrentInstant();
 
         SetName(name);
         SetDescription(description);
@@ -71,12 +72,12 @@ public partial class EventLabel
     {
         SetName(name);
         SetDescription(description);
-        UpdatedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = SystemClock.Instance.GetCurrentInstant();
     }
 
     public void SoftDelete()
     {
         IsDeleted = true;
-        DeletedAt = DateTimeOffset.UtcNow;
+        DeletedAt = SystemClock.Instance.GetCurrentInstant();
     }
 }

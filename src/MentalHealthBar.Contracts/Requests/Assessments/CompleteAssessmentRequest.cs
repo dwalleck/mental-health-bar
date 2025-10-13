@@ -1,7 +1,9 @@
+using NodaTime;
+
 namespace MentalHealthBar.Contracts.Requests.Assessments;
 
 public record CompleteAssessmentRequest(
     string Type,
-    DateTimeOffset CompletedAt,
+    Instant CompletedAt,
     Dictionary<string, int> Responses
 );

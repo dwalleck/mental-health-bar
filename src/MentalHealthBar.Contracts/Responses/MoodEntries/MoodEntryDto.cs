@@ -1,13 +1,14 @@
 using MentalHealthBar.Contracts.Responses.EventLabels;
+using NodaTime;
 
 namespace MentalHealthBar.Contracts.Responses.MoodEntries;
 
 public record MoodEntryDto(
     Guid Id,
     int MoodScore,
-    DateTimeOffset RecordedAt,
+    Instant RecordedAt,
     List<EventLabelDto> EventLabels,
     string? Notes,
-    DateTimeOffset CreatedAt,
-    DateTimeOffset? UpdatedAt
+    Instant CreatedAt,
+    Instant? UpdatedAt
 );

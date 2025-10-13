@@ -5,13 +5,14 @@ using MentalHealthBar.Api.Domain.Assessments;
 using MentalHealthBar.Api.Infrastructure.Data;
 using MentalHealthBar.Contracts.Responses.Assessments;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Features.Assessments.Complete;
 
 public record Command(
     string Type,
     Dictionary<string, int> Responses,
-    DateTimeOffset? CompletedAt
+    DateTime? CompletedAt
 ) : IRequest<AssessmentResultDto>;
 
 public class Validator : AbstractValidator<Command>
@@ -28,7 +29,13 @@ public class Validator : AbstractValidator<Command>
             .WithMessage("Responses are required");
 
         RuleFor(x => x.CompletedAt)
-            .LessThanOrEqualTo(DateTimeOffset.UtcNow)
+            .Must(completedAt =>
+            {
+                if (!completedAt.HasValue) return true;
+                var now = SystemClock.Instance.GetCurrentInstant();
+                var completedInstant = Instant.FromDateTimeUtc(completedAt.Value.ToUniversalTime());
+                return completedInstant <= now;
+            })
             .When(x => x.CompletedAt.HasValue)
             .WithMessage("CompletedAt cannot be in the future");
 
@@ -86,7 +93,9 @@ public class Handler(AppDbContext context, IValidator<Command> validator) : IReq
         }
 
         var assessmentType = Enum.Parse<AssessmentType>(request.Type, ignoreCase: true);
-        var completedAt = request.CompletedAt ?? DateTimeOffset.UtcNow;
+        var completedAt = request.CompletedAt.HasValue
+            ? Instant.FromDateTimeUtc(request.CompletedAt.Value.ToUniversalTime())
+            : SystemClock.Instance.GetCurrentInstant();
 
         var assessment = new Assessment(assessmentType, request.Responses, completedAt);
 

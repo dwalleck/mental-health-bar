@@ -4,6 +4,7 @@ using MentalHealthBar.Api.Infrastructure.Data;
 using MentalHealthBar.Contracts.Responses.EventLabels;
 using MentalHealthBar.Contracts.Responses.MoodEntries;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Features.MoodEntries.Update;
 
@@ -83,7 +84,7 @@ public class Handler(AppDbContext context, IValidator<Command> validator) : IReq
             eventLabels,
             savedEntry.Notes,
             savedEntry.CreatedAt,
-            savedEntry.UpdatedAt ?? DateTimeOffset.UtcNow
+            savedEntry.UpdatedAt ?? SystemClock.Instance.GetCurrentInstant()
         );
     }
 }

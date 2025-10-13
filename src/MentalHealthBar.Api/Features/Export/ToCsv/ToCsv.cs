@@ -2,13 +2,14 @@ using System.Text;
 using MediatR;
 using MentalHealthBar.Api.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Features.Export.ToCsv;
 
 public record Command : IRequest<ExportResult>
 {
-    public DateTimeOffset? StartDate { get; init; }
-    public DateTimeOffset? EndDate { get; init; }
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
     public bool IncludeAssessments { get; init; } = true;
     public bool IncludeMoodEntries { get; init; } = true;
     public bool IncludeHealthMetrics { get; init; } = true;
@@ -42,9 +43,16 @@ public class Handler : IRequestHandler<Command, ExportResult>
             csv.AppendLine("=== ASSESSMENTS ===");
             csv.AppendLine("Id,Type,TotalScore,Severity,CompletedAt,CreatedAt");
 
+            var startInstant = request.StartDate.HasValue
+                ? Instant.FromDateTimeUtc(request.StartDate.Value.ToUniversalTime())
+                : (Instant?)null;
+            var endInstant = request.EndDate.HasValue
+                ? Instant.FromDateTimeUtc(request.EndDate.Value.ToUniversalTime())
+                : (Instant?)null;
+
             var assessments = await _context.Assessments
-                .Where(a => (!request.StartDate.HasValue || a.CompletedAt >= request.StartDate.Value) &&
-                           (!request.EndDate.HasValue || a.CompletedAt <= request.EndDate.Value))
+                .Where(a => (!startInstant.HasValue || a.CompletedAt >= startInstant.Value) &&
+                           (!endInstant.HasValue || a.CompletedAt <= endInstant.Value))
                 .OrderBy(a => a.CompletedAt)
                 .ToListAsync(cancellationToken);
 
@@ -61,9 +69,16 @@ public class Handler : IRequestHandler<Command, ExportResult>
             csv.AppendLine("=== MOOD ENTRIES ===");
             csv.AppendLine("Id,MoodScore,RecordedAt,EventLabels,Notes,CreatedAt");
 
+            var startInstantMood = request.StartDate.HasValue
+                ? Instant.FromDateTimeUtc(request.StartDate.Value.ToUniversalTime())
+                : (Instant?)null;
+            var endInstantMood = request.EndDate.HasValue
+                ? Instant.FromDateTimeUtc(request.EndDate.Value.ToUniversalTime())
+                : (Instant?)null;
+
             var moodEntries = await _context.MoodEntries
-                .Where(m => (!request.StartDate.HasValue || m.RecordedAt >= request.StartDate.Value) &&
-                           (!request.EndDate.HasValue || m.RecordedAt <= request.EndDate.Value))
+                .Where(m => (!startInstantMood.HasValue || m.RecordedAt >= startInstantMood.Value) &&
+                           (!endInstantMood.HasValue || m.RecordedAt <= endInstantMood.Value))
                 .OrderBy(m => m.RecordedAt)
                 .Include(m => m.MoodEntryEventLabels)
                     .ThenInclude(mel => mel.EventLabel)
@@ -87,9 +102,16 @@ public class Handler : IRequestHandler<Command, ExportResult>
             csv.AppendLine("=== HEALTH METRICS ===");
             csv.AppendLine("Id,Type,Value,RecordedDate,CreatedAt");
 
+            var startDateOnly = request.StartDate.HasValue
+                ? DateOnly.FromDateTime(request.StartDate.Value)
+                : (DateOnly?)null;
+            var endDateOnly = request.EndDate.HasValue
+                ? DateOnly.FromDateTime(request.EndDate.Value)
+                : (DateOnly?)null;
+
             var healthMetrics = await _context.HealthMetrics
-                .Where(h => (!request.StartDate.HasValue || h.RecordedDate >= DateOnly.FromDateTime(request.StartDate.Value.DateTime)) &&
-                           (!request.EndDate.HasValue || h.RecordedDate <= DateOnly.FromDateTime(request.EndDate.Value.DateTime)))
+                .Where(h => (!startDateOnly.HasValue || h.RecordedDate >= startDateOnly.Value) &&
+                           (!endDateOnly.HasValue || h.RecordedDate <= endDateOnly.Value))
                 .OrderBy(h => h.RecordedDate)
                 .ToListAsync(cancellationToken);
 

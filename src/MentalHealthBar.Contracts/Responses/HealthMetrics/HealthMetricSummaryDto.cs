@@ -1,3 +1,5 @@
+using NodaTime;
+
 namespace MentalHealthBar.Contracts.Responses.HealthMetrics;
 
 public record HealthMetricSummaryDto(
@@ -5,5 +7,5 @@ public record HealthMetricSummaryDto(
     string Type,
     decimal Value,
     DateOnly RecordedDate,
-    DateTimeOffset CreatedAt
+    Instant CreatedAt
 );

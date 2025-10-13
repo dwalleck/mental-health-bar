@@ -3,12 +3,13 @@ using MentalHealthBar.Api.Infrastructure.Data;
 using MentalHealthBar.Contracts.Responses.EventLabels;
 using MentalHealthBar.Contracts.Responses.MoodEntries;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Features.MoodEntries.GetHistory;
 
 public record Query(
-    DateTimeOffset? StartDate = null,
-    DateTimeOffset? EndDate = null,
+    DateTime? StartDate = null,
+    DateTime? EndDate = null,
     Guid? EventLabelId = null,
     int Page = 1,
     int PageSize = 100
@@ -25,12 +26,14 @@ public class Handler(AppDbContext context) : IRequestHandler<Query, MoodPagedRes
         // Filter by date range
         if (request.StartDate.HasValue)
         {
-            query = query.Where(m => m.RecordedAt >= request.StartDate.Value);
+            var startInstant = Instant.FromDateTimeUtc(request.StartDate.Value.ToUniversalTime());
+            query = query.Where(m => m.RecordedAt >= startInstant);
         }
 
         if (request.EndDate.HasValue)
         {
-            query = query.Where(m => m.RecordedAt <= request.EndDate.Value);
+            var endInstant = Instant.FromDateTimeUtc(request.EndDate.Value.ToUniversalTime());
+            query = query.Where(m => m.RecordedAt <= endInstant);
         }
 
         // Filter by event label using the junction table
@@ -77,8 +80,8 @@ public static class Endpoint
     public static IEndpointRouteBuilder MapGetMoodHistoryEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/mood-entries", async (
-            DateTimeOffset? startDate = null,
-            DateTimeOffset? endDate = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
             Guid? eventLabelId = null,
             int page = 1,
             int pageSize = 100,

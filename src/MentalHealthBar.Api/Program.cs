@@ -7,6 +7,8 @@ using MentalHealthBar.Api.Features.Assessments.GetTemplate;
 using MentalHealthBar.Api.Features.Assessments.GetTemplates;
 using MentalHealthBar.Api.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
+using NodaTime.Serialization.SystemTextJson;
 using Serilog;
 using CreateMoodEntry = MentalHealthBar.Api.Features.MoodEntries.Create.Endpoint;
 using GetMoodHistory = MentalHealthBar.Api.Features.MoodEntries.GetHistory.Endpoint;
@@ -44,7 +46,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), npgsqlOptions =>
     {
-        // Npgsql should handle Guid[] to uuid[] automatically, but we can ensure proper configuration here if needed
+        // Enable NodaTime support for proper timezone handling
+        npgsqlOptions.UseNodaTime();
     });
     if (builder.Environment.IsDevelopment())
     {
@@ -63,6 +66,12 @@ builder.Services.AddScoped<AssessmentTemplateSeeder>();
 
 // Add OpenAPI - .NET 10 built-in support
 builder.Services.AddOpenApi();
+
+// Configure JSON serialization for NodaTime
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
+});
 
 // Add CORS - Environment-aware configuration
 // PRODUCTION WARNING: Configure allowed origins in appsettings.Production.json

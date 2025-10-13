@@ -1,3 +1,5 @@
+using NodaTime;
+
 namespace MentalHealthBar.Contracts.Responses.Export;
 
 public record ExportDataResponse(
@@ -6,10 +8,10 @@ public record ExportDataResponse(
     List<HealthMetricExport> HealthMetrics,
     List<string> EventLabels,
     DateRangeExport DateRange,
-    DateTimeOffset ExportedAt
+    Instant ExportedAt
 );
 
-public record DateRangeExport(DateTimeOffset Start, DateTimeOffset End);
+public record DateRangeExport(Instant Start, Instant End);
 
 public record AssessmentExport(
     Guid Id,
@@ -17,18 +19,18 @@ public record AssessmentExport(
     Dictionary<string, int> Responses,
     int TotalScore,
     string Severity,
-    DateTimeOffset CompletedAt,
-    DateTimeOffset CreatedAt
+    Instant CompletedAt,
+    Instant CreatedAt
 );
 
 public record MoodEntryExport(
     Guid Id,
     int MoodScore,
     string MoodLabel,
-    DateTimeOffset RecordedAt,
+    Instant RecordedAt,
     List<string> EventLabelNames,
     string? Notes,
-    DateTimeOffset CreatedAt
+    Instant CreatedAt
 );
 
 public record HealthMetricExport(
@@ -36,5 +38,5 @@ public record HealthMetricExport(
     string Type,
     decimal Value,
     DateOnly RecordedDate,
-    DateTimeOffset CreatedAt
+    Instant CreatedAt
 );

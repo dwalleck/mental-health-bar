@@ -3,13 +3,14 @@ using MentalHealthBar.Api.Domain.Assessments;
 using MentalHealthBar.Api.Infrastructure.Data;
 using MentalHealthBar.Contracts.Responses.Assessments;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Features.Assessments.GetHistory;
 
 public record Query(
     string? Type = null,
-    DateTimeOffset? StartDate = null,
-    DateTimeOffset? EndDate = null,
+    DateTime? StartDate = null,
+    DateTime? EndDate = null,
     int Page = 1,
     int PageSize = 100
 ) : IRequest<AssessmentPagedResultDto>;
@@ -34,12 +35,14 @@ public class Handler(AppDbContext context) : IRequestHandler<Query, AssessmentPa
         // Filter by date range
         if (request.StartDate.HasValue)
         {
-            query = query.Where(a => a.CompletedAt >= request.StartDate.Value);
+            var startInstant = Instant.FromDateTimeUtc(request.StartDate.Value.ToUniversalTime());
+            query = query.Where(a => a.CompletedAt >= startInstant);
         }
 
         if (request.EndDate.HasValue)
         {
-            query = query.Where(a => a.CompletedAt <= request.EndDate.Value);
+            var endInstant = Instant.FromDateTimeUtc(request.EndDate.Value.ToUniversalTime());
+            query = query.Where(a => a.CompletedAt <= endInstant);
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -71,8 +74,8 @@ public static class Endpoint
     {
         app.MapGet("/api/assessments", async (
             string? type = null,
-            DateTimeOffset? startDate = null,
-            DateTimeOffset? endDate = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
             int page = 1,
             int pageSize = 100,
             IMediator mediator = null!) =>

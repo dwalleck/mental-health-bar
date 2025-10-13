@@ -6,12 +6,13 @@ using MentalHealthBar.Contracts.Responses.EventLabels;
 using MentalHealthBar.Contracts.Responses.MoodEntries;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Features.MoodEntries.Create;
 
 public record Command(
     int MoodScore,
-    DateTimeOffset? RecordedAt,
+    DateTime? RecordedAt,
     List<Guid>? EventLabelIds,
     string? Notes
 ) : IRequest<MoodEntryDto>;
@@ -36,8 +37,10 @@ public class Validator : AbstractValidator<Command>
             .Must(recordedAt =>
             {
                 if (!recordedAt.HasValue) return true;
-                var maxFutureDate = DateTimeOffset.UtcNow.AddDays(30);
-                return recordedAt.Value <= maxFutureDate;
+                var now = SystemClock.Instance.GetCurrentInstant();
+                var maxFutureInstant = now.Plus(Duration.FromDays(30));
+                var recordedInstant = Instant.FromDateTimeUtc(recordedAt.Value.ToUniversalTime());
+                return recordedInstant <= maxFutureInstant;
             })
             .WithMessage("RecordedAt cannot be more than 30 days in the future");
     }
@@ -57,7 +60,9 @@ public class Handler(AppDbContext context, IValidator<Command> validator, ILogge
             throw new ValidationException(validationResult.Errors);
         }
 
-        var recordedAt = request.RecordedAt ?? DateTimeOffset.UtcNow;
+        var recordedAt = request.RecordedAt.HasValue
+            ? Instant.FromDateTimeUtc(request.RecordedAt.Value.ToUniversalTime())
+            : SystemClock.Instance.GetCurrentInstant();
         var eventLabelIds = request.EventLabelIds ?? new List<Guid>();
 
         _logger.LogInformation("Creating MoodEntry with {Count} EventLabelIds: {Ids}",

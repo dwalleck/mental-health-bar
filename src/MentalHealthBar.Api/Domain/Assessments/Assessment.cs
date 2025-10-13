@@ -1,4 +1,5 @@
 using MassTransit;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Domain.Assessments;
 
@@ -6,22 +7,22 @@ public class Assessment
 {
     public Guid Id { get; init; }
     public AssessmentType Type { get; init; }
-    public DateTimeOffset CompletedAt { get; init; }
+    public Instant CompletedAt { get; init; }
     public Dictionary<string, int> Responses { get; init; } = new();
     public int TotalScore { get; private set; }
     public SeverityLevel Severity { get; private set; }
-    public DateTimeOffset CreatedAt { get; init; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public Instant CreatedAt { get; init; }
+    public Instant? UpdatedAt { get; set; }
 
     private Assessment() { } // EF Core constructor
 
-    public Assessment(AssessmentType type, Dictionary<string, int> responses, DateTimeOffset completedAt)
+    public Assessment(AssessmentType type, Dictionary<string, int> responses, Instant completedAt)
     {
         Id = NewId.NextSequentialGuid();
         Type = type;
         Responses = responses ?? throw new ArgumentNullException(nameof(responses));
         CompletedAt = completedAt;
-        CreatedAt = DateTimeOffset.UtcNow;
+        CreatedAt = SystemClock.Instance.GetCurrentInstant();
 
         ValidateResponses();
         CalculateScore();
@@ -50,7 +51,7 @@ public class Assessment
                 "Each response must be between 0 and 3");
         }
 
-        if (CompletedAt > DateTimeOffset.UtcNow)
+        if (CompletedAt > SystemClock.Instance.GetCurrentInstant())
         {
             throw new ArgumentOutOfRangeException(nameof(CompletedAt),
                 "CompletedAt cannot be in the future");

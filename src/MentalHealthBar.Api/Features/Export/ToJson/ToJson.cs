@@ -4,13 +4,14 @@ using MediatR;
 using MentalHealthBar.Api.Infrastructure.Data;
 using MentalHealthBar.Contracts.Responses.Export;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Features.Export.ToJson;
 
 public record Command : IRequest<ExportResult>
 {
-    public DateTimeOffset? StartDate { get; init; }
-    public DateTimeOffset? EndDate { get; init; }
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
     public bool IncludeAssessments { get; init; } = true;
     public bool IncludeMoodEntries { get; init; } = true;
     public bool IncludeHealthMetrics { get; init; } = true;
@@ -31,14 +32,26 @@ public class Handler(AppDbContext context) : IRequestHandler<Command, ExportResu
             throw new ArgumentException("EndDate must be greater than or equal to StartDate");
         }
 
-        var actualStartDate = request.StartDate ?? DateTimeOffset.UtcNow.AddYears(-1); // Default to 1 year ago
-        var actualEndDate = request.EndDate ?? DateTimeOffset.UtcNow;
+        var now = SystemClock.Instance.GetCurrentInstant();
+        var actualStartInstant = request.StartDate.HasValue
+            ? Instant.FromDateTimeUtc(request.StartDate.Value.ToUniversalTime())
+            : now.Minus(Duration.FromDays(365)); // Default to 1 year ago
+        var actualEndInstant = request.EndDate.HasValue
+            ? Instant.FromDateTimeUtc(request.EndDate.Value.ToUniversalTime())
+            : now;
+
+        var startInstant = request.StartDate.HasValue
+            ? Instant.FromDateTimeUtc(request.StartDate.Value.ToUniversalTime())
+            : (Instant?)null;
+        var endInstant = request.EndDate.HasValue
+            ? Instant.FromDateTimeUtc(request.EndDate.Value.ToUniversalTime())
+            : (Instant?)null;
 
         // Export Assessments
         var assessments = request.IncludeAssessments
             ? await _context.Assessments
-                .Where(a => (!request.StartDate.HasValue || a.CompletedAt >= request.StartDate.Value) &&
-                           (!request.EndDate.HasValue || a.CompletedAt <= request.EndDate.Value))
+                .Where(a => (!startInstant.HasValue || a.CompletedAt >= startInstant.Value) &&
+                           (!endInstant.HasValue || a.CompletedAt <= endInstant.Value))
                 .OrderBy(a => a.CompletedAt)
                 .Select(a => new AssessmentExport(
                     a.Id,
@@ -55,8 +68,8 @@ public class Handler(AppDbContext context) : IRequestHandler<Command, ExportResu
         // Export Mood Entries
         var moodEntriesList = request.IncludeMoodEntries
             ? await _context.MoodEntries
-                .Where(m => (!request.StartDate.HasValue || m.RecordedAt >= request.StartDate.Value) &&
-                           (!request.EndDate.HasValue || m.RecordedAt <= request.EndDate.Value))
+                .Where(m => (!startInstant.HasValue || m.RecordedAt >= startInstant.Value) &&
+                           (!endInstant.HasValue || m.RecordedAt <= endInstant.Value))
                 .OrderBy(m => m.RecordedAt)
                 .Include(m => m.MoodEntryEventLabels)
                     .ThenInclude(mel => mel.EventLabel)
@@ -74,10 +87,17 @@ public class Handler(AppDbContext context) : IRequestHandler<Command, ExportResu
         )).ToList();
 
         // Export Health Metrics
+        var startDateOnly = request.StartDate.HasValue
+            ? DateOnly.FromDateTime(request.StartDate.Value)
+            : (DateOnly?)null;
+        var endDateOnly = request.EndDate.HasValue
+            ? DateOnly.FromDateTime(request.EndDate.Value)
+            : (DateOnly?)null;
+
         var healthMetrics = request.IncludeHealthMetrics
             ? await _context.HealthMetrics
-                .Where(h => (!request.StartDate.HasValue || h.RecordedDate >= DateOnly.FromDateTime(request.StartDate.Value.DateTime)) &&
-                           (!request.EndDate.HasValue || h.RecordedDate <= DateOnly.FromDateTime(request.EndDate.Value.DateTime)))
+                .Where(h => (!startDateOnly.HasValue || h.RecordedDate >= startDateOnly.Value) &&
+                           (!endDateOnly.HasValue || h.RecordedDate <= endDateOnly.Value))
                 .OrderBy(h => h.RecordedDate)
                 .Select(h => new HealthMetricExport(
                     h.Id,
@@ -103,8 +123,8 @@ public class Handler(AppDbContext context) : IRequestHandler<Command, ExportResu
             moodEntries,
             healthMetrics,
             eventLabels,
-            new DateRangeExport(actualStartDate, actualEndDate),
-            DateTimeOffset.UtcNow
+            new DateRangeExport(actualStartInstant, actualEndInstant),
+            now
         );
 
         var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions

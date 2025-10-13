@@ -1,4 +1,5 @@
 using MassTransit;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Domain.HealthMetrics;
 
@@ -12,10 +13,10 @@ public class HealthMetric
     public MetricType Type { get; init; }
     public decimal Value { get; private set; }
     public DateOnly RecordedDate { get; init; }
-    public DateTimeOffset CreatedAt { get; init; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public Instant CreatedAt { get; init; }
+    public Instant? UpdatedAt { get; set; }
     public bool IsDeleted { get; set; }
-    public DateTimeOffset? DeletedAt { get; set; }
+    public Instant? DeletedAt { get; set; }
 
     private HealthMetric() { } // EF Core constructor
 
@@ -24,7 +25,7 @@ public class HealthMetric
         Id = NewId.NextSequentialGuid();
         Type = type;
         RecordedDate = recordedDate;
-        CreatedAt = DateTimeOffset.UtcNow;
+        CreatedAt = SystemClock.Instance.GetCurrentInstant();
 
         ValidateRecordedDate(recordedDate);
         SetValue(value);
@@ -57,13 +58,13 @@ public class HealthMetric
     public void Update(decimal value)
     {
         SetValue(value);
-        UpdatedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = SystemClock.Instance.GetCurrentInstant();
     }
 
     public void SoftDelete()
     {
         IsDeleted = true;
-        DeletedAt = DateTimeOffset.UtcNow;
+        DeletedAt = SystemClock.Instance.GetCurrentInstant();
     }
 
     private static void ValidateRecordedDate(DateOnly recordedDate)

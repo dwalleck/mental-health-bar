@@ -1,4 +1,5 @@
 using MassTransit;
+using NodaTime;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MentalHealthBar.Api.Domain.MoodEntries;
@@ -11,12 +12,12 @@ public class MoodEntry
 
     public Guid Id { get; init; }
     public int MoodScore { get; private set; }
-    public DateTimeOffset RecordedAt { get; init; }
+    public Instant RecordedAt { get; init; }
     public string? Notes { get; private set; }
-    public DateTimeOffset CreatedAt { get; init; }
-    public DateTimeOffset? UpdatedAt { get; set; }
+    public Instant CreatedAt { get; init; }
+    public Instant? UpdatedAt { get; set; }
     public bool IsDeleted { get; set; }
-    public DateTimeOffset? DeletedAt { get; set; }
+    public Instant? DeletedAt { get; set; }
 
     // Navigation property for many-to-many relationship
     public ICollection<MoodEntryEventLabel> MoodEntryEventLabels { get; set; } = new List<MoodEntryEventLabel>();
@@ -32,11 +33,11 @@ public class MoodEntry
         MoodEntryEventLabels = new List<MoodEntryEventLabel>();
     }
 
-    public MoodEntry(int moodScore, DateTimeOffset recordedAt, IEnumerable<Guid>? eventLabelIds = null, string? notes = null)
+    public MoodEntry(int moodScore, Instant recordedAt, IEnumerable<Guid>? eventLabelIds = null, string? notes = null)
     {
         Id = NewId.NextSequentialGuid();
         RecordedAt = recordedAt;
-        CreatedAt = DateTimeOffset.UtcNow;
+        CreatedAt = SystemClock.Instance.GetCurrentInstant();
         MoodEntryEventLabels = new List<MoodEntryEventLabel>();
 
         SetMoodScore(moodScore);
@@ -90,18 +91,18 @@ public class MoodEntry
         SetMoodScore(moodScore);
         if (eventLabelIds != null) SetEventLabels(eventLabelIds);
         SetNotes(notes);
-        UpdatedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = SystemClock.Instance.GetCurrentInstant();
     }
 
     public void SoftDelete()
     {
         IsDeleted = true;
-        DeletedAt = DateTimeOffset.UtcNow;
+        DeletedAt = SystemClock.Instance.GetCurrentInstant();
     }
 
-    public static void ValidateRecordedAt(DateTimeOffset recordedAt)
+    public static void ValidateRecordedAt(Instant recordedAt)
     {
-        var maxFutureDate = DateTimeOffset.UtcNow.AddDays(MaxFutureDays);
+        var maxFutureDate = SystemClock.Instance.GetCurrentInstant().Plus(Duration.FromDays(MaxFutureDays));
         if (recordedAt > maxFutureDate)
         {
             throw new ArgumentOutOfRangeException(nameof(recordedAt),

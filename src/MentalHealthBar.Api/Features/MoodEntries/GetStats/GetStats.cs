@@ -2,12 +2,13 @@ using MediatR;
 using MentalHealthBar.Api.Infrastructure.Data;
 using MentalHealthBar.Contracts.Responses.MoodEntries;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Features.MoodEntries.GetStats;
 
 public record Query(
-    DateTimeOffset? StartDate = null,
-    DateTimeOffset? EndDate = null
+    DateTime? StartDate = null,
+    DateTime? EndDate = null
 ) : IRequest<MoodStatsDto>;
 
 public class Handler(AppDbContext context) : IRequestHandler<Query, MoodStatsDto>
@@ -21,12 +22,14 @@ public class Handler(AppDbContext context) : IRequestHandler<Query, MoodStatsDto
         // Filter by date range
         if (request.StartDate.HasValue)
         {
-            query = query.Where(m => m.RecordedAt >= request.StartDate.Value);
+            var startInstant = Instant.FromDateTimeUtc(request.StartDate.Value.ToUniversalTime());
+            query = query.Where(m => m.RecordedAt >= startInstant);
         }
 
         if (request.EndDate.HasValue)
         {
-            query = query.Where(m => m.RecordedAt <= request.EndDate.Value);
+            var endInstant = Instant.FromDateTimeUtc(request.EndDate.Value.ToUniversalTime());
+            query = query.Where(m => m.RecordedAt <= endInstant);
         }
 
         var entries = await query
@@ -70,8 +73,8 @@ public static class Endpoint
     public static IEndpointRouteBuilder MapGetMoodStatsEndpoint(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/mood-entries/stats", async (
-            DateTimeOffset? startDate = null,
-            DateTimeOffset? endDate = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null,
             IMediator mediator = null!) =>
         {
             var query = new Query(startDate, endDate);

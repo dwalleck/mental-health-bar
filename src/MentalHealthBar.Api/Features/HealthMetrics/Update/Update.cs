@@ -4,6 +4,7 @@ using MentalHealthBar.Api.Domain.HealthMetrics;
 using MentalHealthBar.Api.Infrastructure.Data;
 using MentalHealthBar.Contracts.Responses.HealthMetrics;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
 
 namespace MentalHealthBar.Api.Features.HealthMetrics.Update;
 
@@ -66,7 +67,7 @@ public class Handler(AppDbContext context, IValidator<Command> validator) : IReq
             metric.Value,
             metric.RecordedDate,
             metric.CreatedAt,
-            metric.UpdatedAt ?? DateTimeOffset.UtcNow
+            metric.UpdatedAt ?? SystemClock.Instance.GetCurrentInstant()
         );
     }
 }
