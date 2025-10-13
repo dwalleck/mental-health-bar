@@ -66,10 +66,12 @@ public partial class App : Application
     private void ConfigureServices(IServiceCollection services)
     {
         // Configure HTTP Client with Polly retry policy
+        // All HTTP client configuration is centralized here - ApiClient receives pre-configured client
         services.AddHttpClient<ApiClient>(client =>
         {
-            client.BaseAddress = new Uri("https://localhost:5001/");
+            client.BaseAddress = new Uri("https://localhost:5001/api/");
             client.DefaultRequestHeaders.Add("Accept", "application/json");
+            // Increased timeout to 30s to accommodate export operations with large datasets
             client.Timeout = TimeSpan.FromSeconds(30);
         })
         .AddPolicyHandler(GetRetryPolicy());

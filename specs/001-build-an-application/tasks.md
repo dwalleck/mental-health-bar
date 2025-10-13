@@ -821,6 +821,86 @@ Based on quickstart.md acceptance scenarios
 
 ---
 
+## Phase 3.8: Post-MVP Improvements (Follow-up PRs)
+
+These tasks were identified during PR #3 code review and are recommended for follow-up work.
+
+- [x] **T077**: Centralize HTTP client configuration
+  - **Type**: Refactoring
+  - **Parallel**: No
+  - **Dependencies**: T071
+  - **File Path**: `src/MentalHealthBar.Desktop/Services/ApiClient.cs`, `src/MentalHealthBar.Desktop/App.axaml.cs`
+  - **Acceptance**: All HTTP client configuration in App.axaml.cs, ApiClient uses pre-configured client
+  - **Verified**: ✅ Removed duplicate configuration from ApiClient, centralized in App.axaml.cs
+  - **Details**: Addressed PR feedback about duplicate HTTP client configuration causing potential confusion
+
+- [ ] **T078**: Implement user-facing error notification system
+  - **Type**: Enhancement
+  - **Parallel**: No
+  - **Dependencies**: T072
+  - **File Path**: `src/MentalHealthBar.Desktop/Services/`, `src/MentalHealthBar.Desktop/ViewModels/`
+  - **Acceptance**: ViewModels display error messages to users instead of Console.WriteLine()
+  - **Details**: Create INotificationService interface, implement with status bar/toast notifications, inject into all ViewModels
+  - **PR Feedback**: Critical for UX - users currently see nothing when API calls fail
+
+- [ ] **T079**: Implement safe async initialization pattern
+  - **Type**: Refactoring
+  - **Parallel**: No
+  - **Dependencies**: T072
+  - **File Path**: `src/MentalHealthBar.Desktop/ViewModels/`
+  - **Acceptance**: All ViewModels use ReactiveUI WhenActivated pattern instead of constructor async
+  - **Details**: Replace `_ = LoadDataAsync()` with proper WhenActivated lifecycle management
+  - **PR Feedback**: Current pattern swallows exceptions and could cause app crashes
+
+- [ ] **T080**: Fix remaining 18 test failures
+  - **Type**: Bug Fix
+  - **Parallel**: No
+  - **Dependencies**: T055
+  - **File Path**: `tests/MentalHealthBar.Api.Tests/`
+  - **Acceptance**: All 113 tests passing (currently 95/113)
+  - **Details**: Export tests failing with NodaTime deserialization, GetMoodStats issues, SearchLabels test
+  - **Test Categories**:
+    - 10 export tests (NodaTime JSON issues)
+    - 2 mood stats tests
+    - 1 search labels test
+    - 5 health metrics scenarios
+
+- [ ] **T081**: Add XML documentation to public APIs
+  - **Type**: Documentation
+  - **Parallel**: No
+  - **Dependencies**: T046
+  - **File Path**: `src/MentalHealthBar.Api/Features/`, `src/MentalHealthBar.Desktop/Services/`
+  - **Acceptance**: All public APIs have /// XML comments with param/return documentation
+  - **Details**: MediatR handlers, API endpoints, service interfaces, domain entities
+
+- [ ] **T082**: Add production connection string validation
+  - **Type**: Security
+  - **Parallel**: No
+  - **Dependencies**: T005
+  - **File Path**: `src/MentalHealthBar.Api/Program.cs`
+  - **Acceptance**: Startup validation rejects default credentials in Production environment
+  - **Details**: Check for "postgres:postgres" or empty passwords, throw on Production startup
+  - **PR Feedback**: Prevent accidental production deployment with development credentials
+
+- [ ] **T083**: Standardize DTO naming conventions
+  - **Type**: Refactoring
+  - **Parallel**: No
+  - **Dependencies**: T046c
+  - **File Path**: `src/MentalHealthBar.Contracts/Responses/`
+  - **Acceptance**: Consistent naming - either *Dto or *Response (recommend *Dto)
+  - **Details**: Currently mixing AssessmentResponse with AssessmentDetailDto naming patterns
+
+- [ ] **T084**: Add cancellation token support to ViewModel async methods
+  - **Type**: Enhancement
+  - **Parallel**: No
+  - **Dependencies**: T072
+  - **File Path**: `src/MentalHealthBar.Desktop/ViewModels/`
+  - **Acceptance**: All async ViewModel methods accept CancellationToken, cancel on view deactivation
+  - **Details**: Improve resource management when users navigate away from views
+  - **PR Feedback**: Performance and resource management concern
+
+---
+
 ## Dependencies Graph
 
 ```
@@ -885,8 +965,8 @@ dotnet test --filter "FullyQualifiedName~ExportContractTests"
 - **Hard Delete**: Assessment uses hard delete (no soft delete)
 - **Validation**: FluentValidation in command handlers for all POST/PUT endpoints
 - **Parallelization**: 32 tasks marked [P] can run independently
-- **Total Tasks**: 76 tasks
-- **Estimated Time**: 40-60 hours for full implementation
+- **Total Tasks**: 84 tasks (76 MVP + 8 post-MVP improvements)
+- **Estimated Time**: 40-60 hours for MVP, additional 15-20 hours for post-MVP improvements
 
 ---
 

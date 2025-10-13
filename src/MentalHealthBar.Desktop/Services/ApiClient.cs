@@ -1,7 +1,6 @@
 using System;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,8 +14,6 @@ using MentalHealthBar.Contracts.Responses.EventLabels;
 using MentalHealthBar.Contracts.Responses.Export;
 using MentalHealthBar.Contracts.Responses.HealthMetrics;
 using MentalHealthBar.Contracts.Responses.MoodEntries;
-using Polly;
-using Polly.Extensions.Http;
 
 namespace MentalHealthBar.Desktop.Services;
 
@@ -60,27 +57,14 @@ public interface IApiClient
 public class ApiClient : IApiClient
 {
     private readonly HttpClient _httpClient;
-    private readonly IAsyncPolicy<HttpResponseMessage> _retryPolicy;
     private readonly JsonSerializerOptions _jsonOptions;
 
     public ApiClient(HttpClient httpClient)
     {
-        _httpClient = httpClient;
-        _httpClient.BaseAddress = new Uri("https://localhost:5001/api/");
-        // Increased timeout to 30s to accommodate export operations with large datasets and slow network conditions
-        _httpClient.Timeout = TimeSpan.FromSeconds(30);
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
-        // Configure retry policy with exponential backoff
-        _retryPolicy = HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .OrResult(msg => !msg.IsSuccessStatusCode)
-            .WaitAndRetryAsync(
-                3,
-                retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
-                onRetry: (outcome, timespan, retryCount, context) =>
-                {
-                    Console.WriteLine($"Retry {retryCount} after {timespan} seconds");
-                });
+        // HttpClient is pre-configured in App.axaml.cs with BaseAddress, Timeout, and Retry Policy
+        // No configuration needed here - just use the injected client
 
         _jsonOptions = new JsonSerializerOptions
         {
@@ -92,8 +76,7 @@ public class ApiClient : IApiClient
     // Assessments
     public async Task<List<AssessmentTemplateResponse>> GetAssessmentTemplatesAsync(CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.GetAsync("assessments/templates", cancellationToken));
+        var response = await _httpClient.GetAsync("assessments/templates", cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<List<AssessmentTemplateResponse>>(_jsonOptions, cancellationToken)
@@ -102,8 +85,7 @@ public class ApiClient : IApiClient
 
     public async Task<AssessmentTemplateResponse> GetAssessmentTemplateAsync(string type, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.GetAsync($"assessments/templates/{type}", cancellationToken));
+        var response = await _httpClient.GetAsync($"assessments/templates/{type}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<AssessmentTemplateResponse>(_jsonOptions, cancellationToken)
@@ -112,8 +94,7 @@ public class ApiClient : IApiClient
 
     public async Task<AssessmentResponse> CompleteAssessmentAsync(CompleteAssessmentRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.PostAsJsonAsync("assessments", request, _jsonOptions, cancellationToken));
+        var response = await _httpClient.PostAsJsonAsync("assessments", request, _jsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<AssessmentResponse>(_jsonOptions, cancellationToken)
@@ -131,8 +112,7 @@ public class ApiClient : IApiClient
 
         var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
 
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.GetAsync($"assessments{queryString}", cancellationToken));
+        var response = await _httpClient.GetAsync($"assessments{queryString}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<AssessmentPagedResultDto>(_jsonOptions, cancellationToken)
@@ -141,8 +121,7 @@ public class ApiClient : IApiClient
 
     public async Task<AssessmentResponse> GetAssessmentByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.GetAsync($"assessments/{id}", cancellationToken));
+        var response = await _httpClient.GetAsync($"assessments/{id}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<AssessmentResponse>(_jsonOptions, cancellationToken)
@@ -151,8 +130,7 @@ public class ApiClient : IApiClient
 
     public async Task DeleteAssessmentAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.DeleteAsync($"assessments/{id}", cancellationToken));
+        var response = await _httpClient.DeleteAsync($"assessments/{id}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
     }
@@ -160,8 +138,7 @@ public class ApiClient : IApiClient
     // Mood Entries
     public async Task<MoodEntryResponse> CreateMoodEntryAsync(CreateMoodEntryRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.PostAsJsonAsync("mood-entries", request, _jsonOptions, cancellationToken));
+        var response = await _httpClient.PostAsJsonAsync("mood-entries", request, _jsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<MoodEntryResponse>(_jsonOptions, cancellationToken)
@@ -179,8 +156,7 @@ public class ApiClient : IApiClient
 
         var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
 
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.GetAsync($"mood-entries{queryString}", cancellationToken));
+        var response = await _httpClient.GetAsync($"mood-entries{queryString}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<MoodPagedResultDto>(_jsonOptions, cancellationToken)
@@ -189,8 +165,7 @@ public class ApiClient : IApiClient
 
     public async Task<MoodEntryResponse> GetMoodEntryByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.GetAsync($"mood-entries/{id}", cancellationToken));
+        var response = await _httpClient.GetAsync($"mood-entries/{id}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<MoodEntryResponse>(_jsonOptions, cancellationToken)
@@ -199,8 +174,7 @@ public class ApiClient : IApiClient
 
     public async Task<MoodEntryResponse> UpdateMoodEntryAsync(Guid id, UpdateMoodEntryRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.PutAsJsonAsync($"mood-entries/{id}", request, _jsonOptions, cancellationToken));
+        var response = await _httpClient.PutAsJsonAsync($"mood-entries/{id}", request, _jsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<MoodEntryResponse>(_jsonOptions, cancellationToken)
@@ -209,8 +183,7 @@ public class ApiClient : IApiClient
 
     public async Task DeleteMoodEntryAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.DeleteAsync($"mood-entries/{id}", cancellationToken));
+        var response = await _httpClient.DeleteAsync($"mood-entries/{id}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
     }
@@ -223,8 +196,7 @@ public class ApiClient : IApiClient
 
         var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
 
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.GetAsync($"mood-entries/stats{queryString}", cancellationToken));
+        var response = await _httpClient.GetAsync($"mood-entries/stats{queryString}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<MoodStatsResponse>(_jsonOptions, cancellationToken)
@@ -234,8 +206,7 @@ public class ApiClient : IApiClient
     // Health Metrics
     public async Task<HealthMetricResponse> RecordHealthMetricAsync(RecordHealthMetricRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.PostAsJsonAsync("health-metrics", request, _jsonOptions, cancellationToken));
+        var response = await _httpClient.PostAsJsonAsync("health-metrics", request, _jsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<HealthMetricResponse>(_jsonOptions, cancellationToken)
@@ -253,8 +224,7 @@ public class ApiClient : IApiClient
 
         var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
 
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.GetAsync($"health-metrics{queryString}", cancellationToken));
+        var response = await _httpClient.GetAsync($"health-metrics{queryString}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<HealthMetricPagedResultDto>(_jsonOptions, cancellationToken)
@@ -263,8 +233,7 @@ public class ApiClient : IApiClient
 
     public async Task<HealthMetricResponse> GetHealthMetricByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.GetAsync($"health-metrics/{id}", cancellationToken));
+        var response = await _httpClient.GetAsync($"health-metrics/{id}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<HealthMetricResponse>(_jsonOptions, cancellationToken)
@@ -273,8 +242,7 @@ public class ApiClient : IApiClient
 
     public async Task<HealthMetricResponse> UpdateHealthMetricAsync(Guid id, UpdateHealthMetricRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.PutAsJsonAsync($"health-metrics/{id}", request, _jsonOptions, cancellationToken));
+        var response = await _httpClient.PutAsJsonAsync($"health-metrics/{id}", request, _jsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<HealthMetricResponse>(_jsonOptions, cancellationToken)
@@ -283,8 +251,7 @@ public class ApiClient : IApiClient
 
     public async Task DeleteHealthMetricAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.DeleteAsync($"health-metrics/{id}", cancellationToken));
+        var response = await _httpClient.DeleteAsync($"health-metrics/{id}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
     }
@@ -292,8 +259,7 @@ public class ApiClient : IApiClient
     // Event Labels
     public async Task<EventLabelResponse> CreateEventLabelAsync(CreateEventLabelRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.PostAsJsonAsync("event-labels", request, _jsonOptions, cancellationToken));
+        var response = await _httpClient.PostAsJsonAsync("event-labels", request, _jsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<EventLabelResponse>(_jsonOptions, cancellationToken)
@@ -304,8 +270,7 @@ public class ApiClient : IApiClient
     {
         var queryString = !string.IsNullOrEmpty(search) ? $"?search={search}" : "";
 
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.GetAsync($"event-labels{queryString}", cancellationToken));
+        var response = await _httpClient.GetAsync($"event-labels{queryString}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<List<EventLabelResponse>>(_jsonOptions, cancellationToken)
@@ -314,8 +279,7 @@ public class ApiClient : IApiClient
 
     public async Task<EventLabelResponse> GetEventLabelByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.GetAsync($"event-labels/{id}", cancellationToken));
+        var response = await _httpClient.GetAsync($"event-labels/{id}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<EventLabelResponse>(_jsonOptions, cancellationToken)
@@ -324,8 +288,7 @@ public class ApiClient : IApiClient
 
     public async Task<EventLabelResponse> UpdateEventLabelAsync(Guid id, UpdateEventLabelRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.PutAsJsonAsync($"event-labels/{id}", request, _jsonOptions, cancellationToken));
+        var response = await _httpClient.PutAsJsonAsync($"event-labels/{id}", request, _jsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<EventLabelResponse>(_jsonOptions, cancellationToken)
@@ -334,8 +297,7 @@ public class ApiClient : IApiClient
 
     public async Task DeleteEventLabelAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.DeleteAsync($"event-labels/{id}", cancellationToken));
+        var response = await _httpClient.DeleteAsync($"event-labels/{id}", cancellationToken);
 
         response.EnsureSuccessStatusCode();
     }
@@ -343,8 +305,7 @@ public class ApiClient : IApiClient
     // Export
     public async Task<byte[]> ExportToCsvAsync(ExportRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.PostAsJsonAsync("export/csv", request, _jsonOptions, cancellationToken));
+        var response = await _httpClient.PostAsJsonAsync("export/csv", request, _jsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsByteArrayAsync(cancellationToken);
@@ -352,8 +313,7 @@ public class ApiClient : IApiClient
 
     public async Task<string> ExportToJsonAsync(ExportRequest request, CancellationToken cancellationToken = default)
     {
-        var response = await _retryPolicy.ExecuteAsync(async () =>
-            await _httpClient.PostAsJsonAsync("export/json", request, _jsonOptions, cancellationToken));
+        var response = await _httpClient.PostAsJsonAsync("export/json", request, _jsonOptions, cancellationToken);
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(cancellationToken);
