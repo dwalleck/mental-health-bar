@@ -27,10 +27,11 @@ public class EventLabelConfiguration : IEntityTypeConfiguration<EventLabel>
             .IsRequired()
             .HasDefaultValue(false);
 
-        // Unique constraint on lowercase name (case-insensitive uniqueness)
+        // Unique constraint on name (enforced globally, including soft-deleted records)
+        // This prevents data inconsistency if a soft-deleted label is restored
+        // Application logic must handle "label already exists" conflicts appropriately
         builder.HasIndex(e => e.Name)
             .IsUnique()
-            .HasFilter("\"IsDeleted\" = false")
             .HasDatabaseName("idx_event_labels_name")
             .HasMethod("btree");
 

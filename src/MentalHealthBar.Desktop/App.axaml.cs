@@ -25,10 +25,11 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
 
         // Build the host with DI container
+        // CreateDefaultBuilder automatically loads appsettings.json and appsettings.{Environment}.json
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                ConfigureServices(services);
+                ConfigureServices(services, context);
             })
             .ConfigureLogging(logging =>
             {
@@ -63,13 +64,17 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
-    private void ConfigureServices(IServiceCollection services)
+    private void ConfigureServices(IServiceCollection services, HostBuilderContext context)
     {
+        // Get API base URL from configuration (environment-aware)
+        var apiBaseUrl = context.Configuration["ApiSettings:BaseUrl"]
+            ?? throw new InvalidOperationException("ApiSettings:BaseUrl is not configured in appsettings.json");
+
         // Configure HTTP Client with Polly retry policy
         // All HTTP client configuration is centralized here - ApiClient receives pre-configured client
         services.AddHttpClient<ApiClient>(client =>
         {
-            client.BaseAddress = new Uri("https://localhost:5001/api/");
+            client.BaseAddress = new Uri(apiBaseUrl);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
             // Increased timeout to 30s to accommodate export operations with large datasets
             client.Timeout = TimeSpan.FromSeconds(30);

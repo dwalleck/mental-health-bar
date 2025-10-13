@@ -98,6 +98,26 @@ else
     Log.Warning("CORS is disabled - no allowed origins configured");
 }
 
+// Validate CORS configuration in Production
+if (builder.Environment.IsProduction() && corsOrigins.Length > 0)
+{
+    // Reject wildcard origins
+    if (corsOrigins.Any(origin => origin == "*" || origin.Contains("*")))
+    {
+        throw new InvalidOperationException(
+            "Production environment cannot use wildcard CORS origins. " +
+            "Configure specific allowed origins in appsettings.Production.json");
+    }
+
+    // Reject localhost origins
+    if (corsOrigins.Any(origin => origin.Contains("localhost", StringComparison.OrdinalIgnoreCase)))
+    {
+        Log.Warning("Production environment has localhost in CORS origins - this may be unintentional");
+    }
+
+    Log.Information("CORS production validation passed for {Count} origins", corsOrigins.Length);
+}
+
 // Add Health Checks
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("database", tags: new[] { "db", "ready" })
