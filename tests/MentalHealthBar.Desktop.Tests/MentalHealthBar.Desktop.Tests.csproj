@@ -9,12 +9,14 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="NodaTime" />
     <PackageReference Include="TUnit" />
     <PackageReference Include="Moq" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\MentalHealthBar.Desktop\MentalHealthBar.Desktop.csproj" />
+    <ProjectReference Include="..\..\src\MentalHealthBar.Contracts\MentalHealthBar.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,13 +1,17 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:MentalHealthBar.Desktop.ViewModels"
+        xmlns:views="using:MentalHealthBar.Desktop.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         x:Class="MentalHealthBar.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="MentalHealthBar.Desktop">
+        Title="Mental Health Bar - Personal Wellness Tracker"
+        WindowStartupLocation="CenterScreen"
+        Width="1200"
+        Height="800">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -15,6 +19,121 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
+        <!-- Header/Navigation Bar -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SystemAccentColor}"
+                Padding="20,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- App Title -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="🧠" FontSize="24" Foreground="White" VerticalAlignment="Center" />
+                    <TextBlock Text="Mental Health Bar"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="White"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Current Time/Date -->
+                <TextBlock Grid.Column="2"
+                           Text="{Binding CurrentDateTime}"
+                           Foreground="White"
+                           VerticalAlignment="Center"
+                           FontSize="14" />
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area with Tab Navigation -->
+        <TabControl Grid.Row="1"
+                    TabStripPlacement="Left"
+                    Padding="0">
+            <TabControl.Styles>
+                <Style Selector="TabItem">
+                    <Setter Property="Padding" Value="15,10" />
+                    <Setter Property="MinHeight" Value="50" />
+                </Style>
+                <Style Selector="TabItem:selected">
+                    <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+                </Style>
+            </TabControl.Styles>
+
+            <!-- Dashboard Tab -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="🏠" FontSize="20" />
+                        <TextBlock Text="Dashboard" VerticalAlignment="Center" FontSize="14" />
+                    </StackPanel>
+                </TabItem.Header>
+                <views:DashboardView />
+            </TabItem>
+
+            <!-- Mood Entry Tab -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="😊" FontSize="20" />
+                        <TextBlock Text="Log Mood" VerticalAlignment="Center" FontSize="14" />
+                    </StackPanel>
+                </TabItem.Header>
+                <views:MoodEntryView />
+            </TabItem>
+
+            <!-- Assessments Tab -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="📋" FontSize="20" />
+                        <TextBlock Text="Assessments" VerticalAlignment="Center" FontSize="14" />
+                    </StackPanel>
+                </TabItem.Header>
+                <views:AssessmentsView />
+            </TabItem>
+
+            <!-- Health Metrics Tab -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="💪" FontSize="20" />
+                        <TextBlock Text="Health Metrics" VerticalAlignment="Center" FontSize="14" />
+                    </StackPanel>
+                </TabItem.Header>
+                <views:HealthMetricsView />
+            </TabItem>
+
+            <!-- Data Visualization Tab -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="📈" FontSize="20" />
+                        <TextBlock Text="Trends" VerticalAlignment="Center" FontSize="14" />
+                    </StackPanel>
+                </TabItem.Header>
+                <views:DataVisualizationView />
+            </TabItem>
+
+            <!-- Export Tab -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="💾" FontSize="20" />
+                        <TextBlock Text="Export" VerticalAlignment="Center" FontSize="14" />
+                    </StackPanel>
+                </TabItem.Header>
+                <views:ExportView />
+            </TabItem>
+        </TabControl>
+    </Grid>
 </Window>

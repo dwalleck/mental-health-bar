@@ -1,0 +1,219 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MentalHealthBar.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="MentalHealthBar.Desktop.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+    <ScrollViewer>
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <TextBlock Grid.Row="0"
+                       Text="Dashboard"
+                       FontSize="32"
+                       FontWeight="Bold"
+                       Margin="0,0,0,20" />
+
+            <!-- Summary Cards -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Recent Mood Card -->
+                <Border Grid.Column="0"
+                        Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="Recent Mood"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,10" />
+
+                        <TextBlock FontSize="36"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0}/5">
+                                    <Binding Path="RecentMoodScore" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+
+                        <TextBlock Text="{Binding RecentMoodLabel}"
+                                   FontSize="14"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,5,0,0"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+
+                        <TextBlock Text="{Binding RecentMoodDate}"
+                                   FontSize="12"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,5,0,0"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Last Assessment Card -->
+                <Border Grid.Column="2"
+                        Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="Last Assessment"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,10" />
+
+                        <TextBlock Text="{Binding LastAssessmentType}"
+                                   FontSize="24"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center" />
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                            <TextBlock Text="Score: " FontSize="14" />
+                            <TextBlock Text="{Binding LastAssessmentScore}" FontSize="14" FontWeight="Bold" />
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding LastAssessmentSeverity}"
+                                   FontSize="14"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,5,0,0"
+                                   Foreground="{Binding LastAssessmentSeverityColor}" />
+
+                        <TextBlock Text="{Binding LastAssessmentDate}"
+                                   FontSize="12"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,5,0,0"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Quick Actions -->
+            <StackPanel Grid.Row="2" Margin="0,30,0,20">
+                <TextBlock Text="Quick Actions"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,15" />
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0"
+                            Command="{Binding LogMoodCommand}"
+                            HorizontalAlignment="Stretch"
+                            Height="60"
+                            CornerRadius="8">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="📝" FontSize="24" Margin="0,0,10,0" />
+                            <TextBlock Text="Log Mood" VerticalAlignment="Center" FontSize="16" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Grid.Column="2"
+                            Command="{Binding TakeAssessmentCommand}"
+                            HorizontalAlignment="Stretch"
+                            Height="60"
+                            CornerRadius="8">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="📋" FontSize="24" Margin="0,0,10,0" />
+                            <TextBlock Text="Take Assessment" VerticalAlignment="Center" FontSize="16" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Grid.Column="4"
+                            Command="{Binding ViewTrendsCommand}"
+                            HorizontalAlignment="Stretch"
+                            Height="60"
+                            CornerRadius="8">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="📈" FontSize="24" Margin="0,0,10,0" />
+                            <TextBlock Text="View Trends" VerticalAlignment="Center" FontSize="16" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </StackPanel>
+
+            <!-- Recent Activity -->
+            <Border Grid.Row="3"
+                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Recent Activity"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,15" />
+
+                    <ItemsControl ItemsSource="{Binding RecentActivities}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                                        BorderThickness="0,0,0,1"
+                                        Padding="0,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Icon}"
+                                                   FontSize="20"
+                                                   Margin="0,0,15,0" />
+
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Title}"
+                                                       FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Description}"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding TimeAgo}"
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="No recent activity"
+                               FontStyle="Italic"
+                               HorizontalAlignment="Center"
+                               Margin="0,20"
+                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                               IsVisible="{Binding !HasRecentActivity}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

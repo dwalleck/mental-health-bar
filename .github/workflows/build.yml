@@ -1,0 +1,94 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, 001-build-an-application ]
+  pull_request:
+    branches: [ main, 001-build-an-application ]
+
+jobs:
+  build:
+    name: Build Solution
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 10 RC
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+        dotnet-quality: 'preview'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build API
+      run: dotnet build src/MentalHealthBar.Api/MentalHealthBar.Api.csproj --no-restore --configuration Release
+
+    - name: Build Contracts
+      run: dotnet build src/MentalHealthBar.Contracts/MentalHealthBar.Contracts.csproj --no-restore --configuration Release
+
+    - name: Build Desktop
+      run: dotnet build src/MentalHealthBar.Desktop/MentalHealthBar.Desktop.csproj --no-restore --configuration Release
+
+    - name: Build API Tests
+      run: dotnet build tests/MentalHealthBar.Api.Tests/MentalHealthBar.Api.Tests.csproj --no-restore --configuration Release
+
+    - name: Build Desktop Tests
+      run: dotnet build tests/MentalHealthBar.Desktop.Tests/MentalHealthBar.Desktop.Tests.csproj --no-restore --configuration Release
+
+    - name: Build status
+      run: |
+        echo "✅ API build succeeded"
+        echo "✅ Desktop build succeeded"
+        echo "✅ Desktop tests build succeeded"
+
+  format-check:
+    name: Code Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 10 RC
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+        dotnet-quality: 'preview'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Format check
+      continue-on-error: true
+      run: dotnet format --verify-no-changes --no-restore
+
+  build-status:
+    name: Build Status
+    runs-on: ubuntu-latest
+    needs: [build, format-check]
+    if: always()
+
+    steps:
+    - name: Check build results
+      run: |
+        echo "Build status: ${{ needs.build.result }}"
+        echo "Format check status: ${{ needs.format-check.result }}"
+
+        if [ "${{ needs.build.result }}" != "success" ]; then
+          echo "❌ Build failed"
+          exit 1
+        fi
+
+        if [ "${{ needs.format-check.result }}" != "success" ]; then
+          echo "⚠️  Format check failed (non-blocking)"
+        fi
+
+        echo "✅ Build validation passed!"

@@ -1,0 +1,289 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MentalHealthBar.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="MentalHealthBar.Desktop.Views.HealthMetricsView"
+             x:DataType="vm:HealthMetricsViewModel">
+
+    <ScrollViewer>
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <TextBlock Grid.Row="0"
+                       Text="Health Metrics"
+                       FontSize="32"
+                       FontWeight="Bold"
+                       Margin="0,0,0,20" />
+
+            <!-- Content -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="500" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Entry Form -->
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Record Daily Metrics"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,20" />
+
+                    <!-- Date Selection -->
+                    <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="20"
+                            Margin="0,0,0,15">
+                        <StackPanel>
+                            <TextBlock Text="Date"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,10" />
+                            <DatePicker SelectedDate="{Binding RecordedDate}"
+                                        HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Sleep Hours -->
+                    <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="20"
+                            Margin="0,0,0,15">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <TextBlock Text="🛏️" FontSize="24" Margin="0,0,10,0" />
+                                <TextBlock Text="Sleep Hours"
+                                           FontWeight="SemiBold"
+                                           FontSize="16"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="100" />
+                                </Grid.ColumnDefinitions>
+
+                                <Slider Grid.Column="0"
+                                        Value="{Binding SleepHours}"
+                                        Minimum="0"
+                                        Maximum="24"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="False"
+                                        VerticalAlignment="Center" />
+
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding SleepHours}"
+                                               Minimum="0"
+                                               Maximum="24"
+                                               Increment="0.5"
+                                               FormatString="F1"
+                                               Watermark="0.0" />
+                            </Grid>
+
+                            <TextBlock Margin="0,10,0,0"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="Recommended: 7-9 hours for adults">
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Water Intake -->
+                    <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="20"
+                            Margin="0,0,0,15">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <TextBlock Text="💧" FontSize="24" Margin="0,0,10,0" />
+                                <TextBlock Text="Water Intake (oz)"
+                                           FontWeight="SemiBold"
+                                           FontSize="16"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="100" />
+                                </Grid.ColumnDefinitions>
+
+                                <Slider Grid.Column="0"
+                                        Value="{Binding WaterIntakeOz}"
+                                        Minimum="0"
+                                        Maximum="200"
+                                        TickFrequency="8"
+                                        IsSnapToTickEnabled="False"
+                                        VerticalAlignment="Center" />
+
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding WaterIntakeOz}"
+                                               Minimum="0"
+                                               Maximum="200"
+                                               Increment="8"
+                                               FormatString="F1"
+                                               Watermark="0.0" />
+                            </Grid>
+
+                            <TextBlock Margin="0,10,0,0"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="Recommended: 64 oz (8 cups) daily">
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+
+                            <!-- Conversion Helper -->
+                            <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                                    CornerRadius="4"
+                                    Padding="10"
+                                    Margin="0,10,0,0">
+                                <TextBlock FontSize="11"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="≈ {0:F1} cups or {1:F0} ml">
+                                            <Binding Path="WaterIntakeCups" />
+                                            <Binding Path="WaterIntakeMl" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Spacing="10">
+                        <Button Command="{Binding ClearCommand}"
+                                Content="Clear"
+                                Width="100"
+                                Height="40"
+                                CornerRadius="8" />
+
+                        <Button Command="{Binding SaveCommand}"
+                                IsEnabled="{Binding CanSave}"
+                                Width="150"
+                                Height="40"
+                                CornerRadius="8">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Save Metrics" FontSize="16" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Messages -->
+                    <Border Background="LightGreen"
+                            BorderBrush="Green"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="15"
+                            Margin="0,15,0,0"
+                            IsVisible="{Binding ShowSuccessMessage}">
+                        <TextBlock Text="{Binding SuccessMessage}"
+                                   HorizontalAlignment="Center"
+                                   Foreground="DarkGreen" />
+                    </Border>
+
+                    <Border Background="LightYellow"
+                            BorderBrush="Orange"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="15"
+                            Margin="0,15,0,0"
+                            IsVisible="{Binding ShowWarningMessage}">
+                        <TextBlock Text="{Binding WarningMessage}"
+                                   HorizontalAlignment="Center"
+                                   Foreground="DarkOrange" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Recent History -->
+                <Border Grid.Column="2"
+                        Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                                   Text="Recent History"
+                                   FontSize="20"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,15" />
+
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding RecentMetrics}"
+                                  AutoGenerateColumns="False"
+                                  CanUserResizeColumns="True"
+                                  GridLinesVisibility="Horizontal"
+                                  MaxHeight="400"
+                                  BorderThickness="0">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Date"
+                                                    Binding="{Binding RecordedDate, StringFormat='{}{0:MMM dd}'}"
+                                                    Width="80" />
+                                <DataGridTextColumn Header="Sleep"
+                                                    Binding="{Binding SleepHours, StringFormat='{}{0:F1}h'}"
+                                                    Width="70" />
+                                <DataGridTextColumn Header="Water"
+                                                    Binding="{Binding WaterIntakeOz, StringFormat='{}{0:F0}oz'}"
+                                                    Width="70" />
+                                <DataGridTemplateColumn Header="Actions" Width="100">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <Button Command="{Binding $parent[DataGrid].DataContext.EditMetricCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Edit"
+                                                        Padding="5,2"
+                                                        FontSize="12"
+                                                        CornerRadius="4" />
+                                                <Button Command="{Binding $parent[DataGrid].DataContext.DeleteMetricCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Delete"
+                                                        Padding="5,2"
+                                                        FontSize="12"
+                                                        CornerRadius="4" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <TextBlock Grid.Row="1"
+                                   Text="No recent metrics recorded"
+                                   FontStyle="Italic"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   IsVisible="{Binding !HasRecentMetrics}" />
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </ScrollViewer>
+</UserControl>
